@@ -3,6 +3,8 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
+import { Button } from "@/components/ui/button"
+import { ArrowLeft } from "lucide-react"
 import { TransactionProgressBar } from "@/components/transaction/progress-bar"
 import { StepNavigation } from "@/components/transaction/step-navigation"
 import { ConfirmationDialog } from "@/components/transaction/confirmation-dialog"
@@ -159,15 +161,22 @@ export default function WithdrawalPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="space-y-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <div className="space-y-6 sm:space-y-8">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Effectuer un retrait</h1>
-          <p className="text-muted-foreground mt-2">
-            Suivez les étapes pour retirer vos gains de votre compte de paris
-          </p>
-      </div>
+        <div className="flex items-center gap-4">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            className="rounded-xl hover:bg-muted shrink-0"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Effectuer un retrait</h1>
+          </div>
+        </div>
 
         {/* Progress Bar */}
         <TransactionProgressBar 
@@ -177,9 +186,9 @@ export default function WithdrawalPage() {
         />
 
         {/* Current Step */}
-        <div className="min-h-[400px]">
+        <div className="min-h-[300px] sm:min-h-[400px]">
           {renderCurrentStep()}
-              </div>
+        </div>
 
         {/* Navigation */}
         {currentStep < 5 && (
@@ -210,7 +219,7 @@ export default function WithdrawalPage() {
           networkName={selectedNetwork?.public_name || ""}
           isLoading={isSubmitting}
         />
-              </div>
+      </div>
     </div>
   )
 }

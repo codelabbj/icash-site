@@ -52,41 +52,38 @@ export function NetworkStep({ selectedNetwork, onSelect, type }: NetworkStepProp
     <Card>
       <CardHeader>
         <CardTitle>Choisir un réseau</CardTitle>
-        <CardDescription>
-          Sélectionnez votre opérateur mobile money pour {type === TRANSACTION_TYPES.DEPOSIT ? "le dépôt" : "le retrait"}
-        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {networks.map((network) => (
             <Card
               key={network.id}
-              className={`cursor-pointer transition-all hover:shadow-md ${
+              className={`cursor-pointer transition-all hover:shadow-lg ${
                 selectedNetwork?.id === network.id
-                  ? `ring-2 ${type === TRANSACTION_TYPES.DEPOSIT ? "ring-deposit bg-green-500/10" : "ring-withdrawal bg-blue-500/10"}`
+                  ? `ring-2 ${type === TRANSACTION_TYPES.DEPOSIT ? "ring-deposit bg-deposit/10" : "ring-withdrawal bg-withdrawal/10"}`
                   : "hover:bg-muted/50"
               }`}
               onClick={() => onSelect(network)}
             >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
                   <SafeImage
                     src={network.image}
                     alt={network.name}
-                    className="w-12 h-12 rounded-lg object-cover"
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover shrink-0"
                     fallbackText={network.public_name.charAt(0).toUpperCase()}
                   />
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{network.public_name}</h3>
-                    <p className="text-sm text-muted-foreground">{network.name}</p>
-                    <div className="flex gap-2 mt-1">
+                  <div className="flex-1 min-w-0 w-full">
+                    <h3 className="font-semibold text-sm sm:text-base truncate">{network.public_name}</h3>
+                    <p className="text-xs text-muted-foreground truncate">{network.name}</p>
+                    <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 mt-1.5 sm:mt-1">
                       {network.active_for_deposit && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-[10px] sm:text-xs w-fit">
                           {getTransactionTypeLabel(TRANSACTION_TYPES.DEPOSIT)}
                         </Badge>
                       )}
                       {network.active_for_with && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-[10px] sm:text-xs w-fit">
                           {getTransactionTypeLabel(TRANSACTION_TYPES.WITHDRAWAL)}
                         </Badge>
                       )}

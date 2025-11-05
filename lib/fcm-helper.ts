@@ -1,4 +1,5 @@
 import { fcmService } from './firebase';
+import { fcmApi } from './api-client';
 
 /**
  * Initialize FCM and get token
@@ -71,28 +72,20 @@ export async function sendTokenToBackend(
   userId?: string
 ): Promise<boolean> {
   try {
-    // Try to send to your backend API
-    const response = await fetch('/api/fcm/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        token,
-        platform: 'web',
-        userId: userId || null,
-      }),
-    });
-
-    if (response.ok) {
-      console.log('FCM token sent to backend successfully');
-      return true;
-    } else {
-      console.error('Failed to send FCM token to backend:', response.statusText);
-      return false;
+    // Send to backend API using the api-client
+    await fcmApi.registerToken(token, 'web', userId);
+    console.log('[FCM] Token sent to backend successfully');
+    return true;
+  } catch (error: any) {
+    // Silently handle errors - token is still saved in localStorage
+    const errorMessage = error?.response?.data?.detail || error?.response?.data?.error || error?.message || 'Unknown error';
+    console.warn('[FCM] Could not send token to backend (token saved locally):', errorMessage);
+    
+    // Don't show toast for 404/endpoint not found - backend might not have this endpoint yet
+    if (error?.response?.status !== 404 && error?.response?.status !== 501) {
+      console.warn('[FCM] Backend endpoint might not be implemented yet');
     }
-  } catch (error) {
-    console.error('Error sending token to backend:', error);
+    
     return false;
   }
 }

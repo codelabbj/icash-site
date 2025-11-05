@@ -126,9 +126,6 @@ export function PhoneStep({ selectedNetwork, selectedPhone, onSelect, onNext }: 
       <Card>
         <CardHeader>
           <CardTitle>Choisir un numéro de téléphone</CardTitle>
-          <CardDescription>
-            Sélectionnez votre numéro {selectedNetwork.public_name} pour la transaction
-          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -140,9 +137,9 @@ export function PhoneStep({ selectedNetwork, selectedPhone, onSelect, onNext }: 
               {phones.map((phone) => (
                 <Card
                   key={phone.id}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
+                  className={`cursor-pointer transition-all hover:shadow-lg ${
                     selectedPhone?.id === phone.id
-                      ? "ring-2 ring-deposit bg-green-500/10"
+                      ? "ring-2 ring-primary bg-primary/10"
                       : "hover:bg-muted/50"
                   }`}
                   onClick={() => onSelect(phone)}

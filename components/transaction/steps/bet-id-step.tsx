@@ -124,9 +124,6 @@ export function BetIdStep({ selectedPlatform, selectedBetId, onSelect, onNext }:
       <Card>
         <CardHeader>
           <CardTitle>Choisir votre ID de pari</CardTitle>
-          <CardDescription>
-            Sélectionnez votre compte de paris pour {selectedPlatform.name}
-          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -138,9 +135,9 @@ export function BetIdStep({ selectedPlatform, selectedBetId, onSelect, onNext }:
               {betIds.map((betId) => (
                 <Card
                   key={betId.id}
-                  className={`cursor-pointer transition-all hover:shadow-md ${
+                  className={`cursor-pointer transition-all hover:shadow-lg ${
                     selectedBetId?.id === betId.id
-                      ? "ring-2 ring-deposit bg-green-500/10"
+                      ? "ring-2 ring-primary bg-primary/10"
                       : "hover:bg-muted/50"
                   }`}
                   onClick={() => onSelect(betId)}

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
@@ -22,7 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import { phoneApi, userAppIdApi, networkApi, platformApi } from "@/lib/api-client"
 import type { UserPhone, UserAppId, Network, Platform } from "@/lib/types"
 import { toast } from "react-hot-toast"
-import { Loader2, Phone, Plus, Trash2, Edit, Smartphone } from "lucide-react"
+import { Loader2, Phone, Plus, Trash2, Edit, Smartphone, ArrowLeft } from "lucide-react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -49,6 +50,7 @@ type PhoneFormData = z.infer<typeof phoneSchema>
 type AppIdFormData = z.infer<typeof appIdSchema>
 
 export default function PhonesPage() {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
   const [userPhones, setUserPhones] = useState<UserPhone[]>([])
   const [userAppIds, setUserAppIds] = useState<UserAppId[]>([])
@@ -203,40 +205,55 @@ export default function PhonesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-          <Phone className="h-8 w-8" />
-          Mes numéros et IDs
-        </h1>
-        <p className="text-muted-foreground mt-2">Gérez vos numéros de téléphone et IDs de pari</p>
+    <div className="space-y-4 sm:space-y-6 px-4 sm:px-0">
+      <div className="flex items-center gap-2 sm:gap-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          className="rounded-xl hover:bg-muted shrink-0"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Phone className="h-5 w-5 sm:h-6 sm:w-6 md:h-8 md:w-8 shrink-0" />
+            <span className="truncate">Mes numéros et IDs</span>
+          </h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 hidden sm:block">Gérez vos numéros de téléphone et IDs de pari</p>
+        </div>
       </div>
 
       <Tabs defaultValue="phones" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="phones">Numéros de téléphone</TabsTrigger>
-          <TabsTrigger value="appIds">IDs de pari</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-2">
+          <TabsTrigger value="phones" className="text-xs sm:text-sm">Numéros</TabsTrigger>
+          <TabsTrigger value="appIds" className="text-xs sm:text-sm">IDs de pari</TabsTrigger>
         </TabsList>
 
         {/* Phone Numbers Tab */}
         <TabsContent value="phones" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <div>
-                <CardTitle>Numéros de téléphone</CardTitle>
-                <CardDescription>Gérez vos numéros de téléphone mobile</CardDescription>
+          <Card className="border-2 border-transparent bg-gradient-to-br from-card to-primary/5">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 space-y-0 pb-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10 shrink-0">
+                  <Phone className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <CardTitle className="text-base sm:text-lg">Numéros de téléphone</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm hidden sm:block">Gérez vos numéros de téléphone mobile</CardDescription>
+                </div>
               </div>
               <Dialog open={isPhoneDialogOpen} onOpenChange={setIsPhoneDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={() => setEditingPhone(null)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Ajouter un numéro
+                  <Button onClick={() => setEditingPhone(null)} size="sm" className="w-full sm:w-auto">
+                    <Plus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="text-xs sm:text-sm">Ajouter</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="w-[95vw] sm:w-full max-w-md">
                   <DialogHeader>
-                    <DialogTitle>{editingPhone ? "Modifier le numéro" : "Ajouter un numéro"}</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="text-lg sm:text-xl">{editingPhone ? "Modifier le numéro" : "Ajouter un numéro"}</DialogTitle>
+                    <DialogDescription className="text-sm">
                       {editingPhone
                         ? "Modifiez les informations de votre numéro"
                         : "Ajoutez un nouveau numéro de téléphone"}
@@ -306,19 +323,61 @@ export default function PhonesPage() {
                 </DialogContent>
               </Dialog>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : userPhones.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Smartphone className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Aucun numéro enregistré</p>
-                  <p className="text-sm text-muted-foreground mt-1">Ajoutez votre premier numéro pour commencer</p>
+                <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center">
+                  <div className="p-3 sm:p-4 rounded-2xl bg-muted/50 mb-3 sm:mb-4">
+                    <Smartphone className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
+                  </div>
+                  <p className="text-base sm:text-lg font-semibold text-muted-foreground mb-1">Aucun numéro enregistré</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Ajoutez votre premier numéro pour commencer</p>
                 </div>
               ) : (
-                <div className="rounded-md border">
+                <div className="space-y-3 sm:hidden">
+                  {userPhones.map((phone) => (
+                    <Card key={phone.id} className="border-2">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-muted-foreground mb-1">Numéro</p>
+                              <p className="font-medium text-sm truncate">{phone.phone}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-muted-foreground mb-1">Réseau</p>
+                              <Badge variant="outline" className="text-xs">
+                                {networks.find((n) => n.id === phone.network)?.name || "Inconnu"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2 pt-2 border-t">
+                            <Button variant="ghost" size="sm" onClick={() => openEditPhoneDialog(phone)}>
+                              <Edit className="h-4 w-4 mr-1" />
+                              <span className="text-xs">Modifier</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteTarget({ type: "phone", id: phone.id })}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1 text-destructive" />
+                              <span className="text-xs">Supprimer</span>
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+              {userPhones.length > 0 && (
+                <div className="hidden sm:block rounded-xl border-2 overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -362,23 +421,28 @@ export default function PhonesPage() {
 
         {/* App IDs Tab */}
         <TabsContent value="appIds" className="space-y-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <div>
-                <CardTitle>IDs de pari</CardTitle>
-                <CardDescription>Gérez vos identifiants de plateformes de pari</CardDescription>
+          <Card className="border-2 border-transparent bg-gradient-to-br from-card to-primary/5">
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0 space-y-0 pb-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 rounded-lg bg-primary/10 shrink-0">
+                  <Smartphone className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <CardTitle className="text-base sm:text-lg">IDs de pari</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm hidden sm:block">Gérez vos identifiants de plateformes de pari</CardDescription>
+                </div>
               </div>
               <Dialog open={isAppIdDialogOpen} onOpenChange={setIsAppIdDialogOpen}>
                 <DialogTrigger asChild>
-                  <Button onClick={() => setEditingAppId(null)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Ajouter un ID
+                  <Button onClick={() => setEditingAppId(null)} size="sm" className="w-full sm:w-auto">
+                    <Plus className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                    <span className="text-xs sm:text-sm">Ajouter</span>
                   </Button>
                 </DialogTrigger>
-                <DialogContent>
+                <DialogContent className="w-[95vw] sm:w-full max-w-md">
                   <DialogHeader>
-                    <DialogTitle>{editingAppId ? "Modifier l'ID" : "Ajouter un ID"}</DialogTitle>
-                    <DialogDescription>
+                    <DialogTitle className="text-lg sm:text-xl">{editingAppId ? "Modifier l'ID" : "Ajouter un ID"}</DialogTitle>
+                    <DialogDescription className="text-sm">
                       {editingAppId ? "Modifiez votre ID de pari" : "Ajoutez un nouvel ID de pari"}
                     </DialogDescription>
                   </DialogHeader>
@@ -446,19 +510,61 @@ export default function PhonesPage() {
                 </DialogContent>
               </Dialog>
             </CardHeader>
-            <CardContent>
+            <CardContent className="pt-0">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : userAppIds.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Smartphone className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground">Aucun ID enregistré</p>
-                  <p className="text-sm text-muted-foreground mt-1">Ajoutez votre premier ID pour commencer</p>
+                <div className="flex flex-col items-center justify-center py-8 sm:py-12 text-center">
+                  <div className="p-3 sm:p-4 rounded-2xl bg-muted/50 mb-3 sm:mb-4">
+                    <Smartphone className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
+                  </div>
+                  <p className="text-base sm:text-lg font-semibold text-muted-foreground mb-1">Aucun ID enregistré</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">Ajoutez votre premier ID pour commencer</p>
                 </div>
               ) : (
-                <div className="rounded-md border">
+                <div className="space-y-3 sm:hidden">
+                  {userAppIds.map((appId, index) => (
+                    <Card key={`appId-mobile-${appId.id}-${appId.app || 'unknown'}-${index}`} className="border-2">
+                      <CardContent className="p-4">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-muted-foreground mb-1">ID de pari</p>
+                              <p className="font-medium text-sm truncate">{appId.user_app_id}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs text-muted-foreground mb-1">Plateforme</p>
+                              <Badge variant="outline" className="text-xs">
+                                {platforms.find((p) => p.id === appId.app)?.name || "Inconnu"}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2 pt-2 border-t">
+                            <Button variant="ghost" size="sm" onClick={() => openEditAppIdDialog(appId)}>
+                              <Edit className="h-4 w-4 mr-1" />
+                              <span className="text-xs">Modifier</span>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeleteTarget({ type: "appId", id: appId.id })}
+                            >
+                              <Trash2 className="h-4 w-4 mr-1 text-destructive" />
+                              <span className="text-xs">Supprimer</span>
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+              {userAppIds.length > 0 && (
+                <div className="hidden sm:block rounded-xl border-2 overflow-hidden">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -468,8 +574,8 @@ export default function PhonesPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {userAppIds.map((appId) => (
-                        <TableRow key={appId.id}>
+                      {userAppIds.map((appId, index) => (
+                        <TableRow key={`appId-table-${appId.id}-${appId.app || 'unknown'}-${index}`}>
                           <TableCell className="font-medium">{appId.user_app_id}</TableCell>
                           <TableCell>
                             <Badge variant="outline">

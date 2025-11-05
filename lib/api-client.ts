@@ -170,3 +170,18 @@ export const bonusApi = {
     return data
   },
 }
+
+export const fcmApi = {
+  registerToken: async (token: string, platform: string = 'web', userId?: string | number) => {
+    const { data } = await api.post('/mobcash/fcm-token/', {
+      token,
+      platform,
+      user_id: userId || null,
+    })
+    return data
+  },
+
+  deleteToken: async (token: string) => {
+    await api.delete(`/mobcash/fcm-token/${token}/`)
+  },
+}

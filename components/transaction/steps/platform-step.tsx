@@ -51,37 +51,34 @@ export function PlatformStep({ selectedPlatform, onSelect, onNext }: PlatformSte
     <Card>
       <CardHeader>
         <CardTitle>Choisir une plateforme</CardTitle>
-        <CardDescription>
-          Sélectionnez la plateforme de paris pour votre transaction
-        </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
           {platforms.map((platform) => (
             <Card
               key={platform.id}
-              className={`cursor-pointer transition-all hover:shadow-md ${
+              className={`cursor-pointer transition-all hover:shadow-lg ${
                 selectedPlatform?.id === platform.id
-                  ? "ring-2 ring-deposit bg-green-500/10"
+                  ? "ring-2 ring-primary bg-primary/10"
                   : "hover:bg-muted/50"
               }`}
               onClick={() => onSelect(platform)}
             >
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
                   <SafeImage
                     src={platform.image}
                     alt={platform.name}
-                    className="w-12 h-12 rounded-lg object-cover"
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg object-cover shrink-0"
                     fallbackText={platform.name.charAt(0).toUpperCase()}
                   />
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{platform.name}</h3>
-                    <div className="flex gap-2 mt-1">
-                      <Badge variant="outline" className="text-xs">
+                  <div className="flex-1 min-w-0 w-full">
+                    <h3 className="font-semibold text-sm sm:text-base truncate">{platform.name}</h3>
+                    <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 mt-1.5 sm:mt-1">
+                      <Badge variant="outline" className="text-[10px] sm:text-xs w-fit">
                         Min: {platform.minimun_deposit.toLocaleString()} FCFA
                       </Badge>
-                      <Badge variant="outline" className="text-xs">
+                      <Badge variant="outline" className="text-[10px] sm:text-xs w-fit">
                         Max: {platform.max_deposit.toLocaleString()} FCFA
                       </Badge>
                     </div>

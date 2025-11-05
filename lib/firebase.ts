@@ -161,24 +161,12 @@ export class FCMService {
    */
   private async sendTokenToServer(token: string): Promise<void> {
     try {
-      // Replace with your API endpoint
-      const response = await fetch('/api/fcm/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          token,
-          platform: 'web',
-          userId: null, // UserId should be passed to setupNotifications if needed
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to send token to server');
-      }
+      // Token sending is now handled by fcm-helper.ts which uses the backend API
+      // This method is kept for backwards compatibility but doesn't send to Next.js API route
+      console.log('[FCM] Token saved locally. Use sendTokenToBackend() from fcm-helper.ts to send to backend API.');
     } catch (error) {
-      console.error('Error sending token to server:', error);
+      // Silently handle errors - token is still saved in localStorage
+      console.warn('[FCM] Could not send token to server (token saved locally):', error instanceof Error ? error.message : 'Network error');
     }
   }
 

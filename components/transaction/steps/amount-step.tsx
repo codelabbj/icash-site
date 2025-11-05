@@ -98,7 +98,6 @@ export function AmountStep({
       <Card>
         <CardHeader>
           <CardTitle>Résumé de la transaction</CardTitle>
-          <CardDescription>Vérifiez les détails avant de continuer</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex justify-between items-center">
@@ -136,9 +135,6 @@ export function AmountStep({
       <Card>
         <CardHeader>
           <CardTitle>Montant de la transaction</CardTitle>
-          <CardDescription>
-            Entrez le montant en FCFA (entre {minAmount.toLocaleString()} et {maxAmount.toLocaleString()} FCFA)
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -178,9 +174,6 @@ export function AmountStep({
         <Card>
           <CardHeader>
             <CardTitle>Code de retrait</CardTitle>
-            <CardDescription>
-              Entrez votre code de retrait (minimum 4 caractères)
-            </CardDescription>
           </CardHeader>
           <CardContent>
             <div>

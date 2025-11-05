@@ -13,8 +13,8 @@ interface ProgressBarProps {
 export function TransactionProgressBar({ currentStep, totalSteps, type, className }: ProgressBarProps) {
   const progress = (currentStep / totalSteps) * 100
 
-  // Use green for deposits, blue for withdrawals
-  const progressColor = type === "deposit" ? "bg-green-500" : type === "withdrawal" ? "bg-blue-500" : "bg-primary"
+  // Use mature colors for deposits and withdrawals
+  const progressColor = type === "deposit" ? "bg-deposit" : type === "withdrawal" ? "bg-withdrawal" : "bg-primary"
 
   return (
     <div className={cn("w-full space-y-2", className)}>
@@ -27,7 +27,7 @@ export function TransactionProgressBar({ currentStep, totalSteps, type, classNam
         className="h-2"
         // Apply custom color via style since Tailwind doesn't support dynamic classes
         style={{
-          '--progress-background': type === "deposit" ? '#22c55e' : type === "withdrawal" ? '#3b82f6' : undefined
+          '--progress-background': type === "deposit" ? 'var(--color-deposit)' : type === "withdrawal" ? 'var(--color-withdrawal)' : undefined
         } as React.CSSProperties}
       />
     </div>

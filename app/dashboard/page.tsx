@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownToLine, ArrowUpFromLine, History, Wallet, Loader2, ArrowRight, RefreshCw } from "lucide-react"
+import { ArrowDownToLine, ArrowUpFromLine, History, Wallet, Loader2, ArrowRight, RefreshCw, Copy, Check, Phone, Smartphone } from "lucide-react"
 import Link from "next/link"
 import { transactionApi } from "@/lib/api-client"
 import type { Transaction } from "@/lib/types"
@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([])
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
+  const [copiedReference, setCopiedReference] = useState<string | null>(null)
 
   useEffect(() => {
     if (user) {
@@ -73,14 +74,25 @@ export default function DashboardPage() {
     )
   }
 
+  const copyReference = async (reference: string) => {
+    try {
+      await navigator.clipboard.writeText(reference)
+      setCopiedReference(reference)
+      toast.success("Référence copiée!")
+      setTimeout(() => setCopiedReference(null), 2000)
+    } catch (error) {
+      toast.error("Erreur lors de la copie")
+    }
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-10 px-4 sm:px-0">
       {/* Welcome section */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Bienvenue, {user?.first_name} {user?.last_name}
+      <div className="space-y-2 sm:space-y-3">
+        <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight gradient-text">
+          Bienvenue, {user?.first_name}! 👋
         </h1>
-        <p className="text-muted-foreground mt-2">Gérez vos dépôts et retraits en toute simplicité</p>
+        <p className="text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground">Gérez vos dépôts et retraits en toute simplicité</p>
       </div>
 
       {/* Balance card */}
@@ -97,13 +109,13 @@ export default function DashboardPage() {
         </CardHeader>
         <CardContent>
           <div className="flex gap-3">
-            <Button asChild variant="secondary" size="sm" className="text-deposit border-deposit hover:bg-green-500/10">
+            <Button asChild variant="secondary" size="sm" className="text-deposit border-deposit hover:bg-deposit/10">
               <Link href="/dashboard/deposit">
                 <ArrowDownToLine className="mr-2 h-4 w-4 text-deposit" />
                 Déposer
               </Link>
             </Button>
-            <Button asChild variant="secondary" size="sm" className="text-withdrawal border-withdrawal hover:bg-blue-500/10">
+            <Button asChild variant="secondary" size="sm" className="text-withdrawal border-withdrawal hover:bg-withdrawal/10">
               <Link href="/dashboard/withdrawal">
                 <ArrowUpFromLine className="mr-2 h-4 w-4 text-withdrawal" />
                 Retirer
@@ -114,63 +126,82 @@ export default function DashboardPage() {
       </Card> */}
 
       {/* Quick actions */}
-      <div>
-        <h2 className="text-xl font-semibold mb-4">Actions rapides</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer hover:border-deposit">
-            <Link href="/dashboard/deposit">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Effectuer un dépôt</CardTitle>
-                <ArrowDownToLine className="h-4 w-4 text-deposit" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">Rechargez votre compte rapidement</p>
-              </CardContent>
-            </Link>
-          </Card>
+      <div className="space-y-4 sm:space-y-6">
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 sm:flex sm:flex-row">
+          <Link href="/dashboard/deposit" className="group">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-deposit via-deposit/90 to-deposit/80 p-3 sm:p-4 lg:p-6 text-white shadow-lg hover:shadow-xl hover:shadow-deposit/40 transition-all duration-300 hover:scale-[1.02] border-2 border-deposit/20">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10 flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
+                <div className="p-2 sm:p-3 lg:p-4 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 group-hover:bg-white/30 transition-all shrink-0">
+                  <ArrowDownToLine className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8" />
+                </div>
+                <div className="flex-1 min-w-0 text-center sm:text-left">
+                  <h3 className="text-xs sm:text-sm lg:text-xl font-bold">Dépôt</h3>
+                  <p className="text-[10px] sm:text-xs lg:text-sm text-white/90 hidden sm:block">Rechargez rapidement</p>
+                </div>
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold group-hover:translate-x-1 transition-transform shrink-0 hidden sm:block">
+                  →
+                </div>
+              </div>
+            </div>
+          </Link>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer hover:border-withdrawal">
-            <Link href="/dashboard/withdrawal">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Effectuer un retrait</CardTitle>
-                <ArrowUpFromLine className="h-4 w-4 text-withdrawal" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">Retirez vos gains facilement</p>
-              </CardContent>
-            </Link>
-          </Card>
+          <Link href="/dashboard/withdrawal" className="group">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-withdrawal via-withdrawal/90 to-withdrawal/80 p-3 sm:p-4 lg:p-6 text-white shadow-lg hover:shadow-xl hover:shadow-withdrawal/40 transition-all duration-300 hover:scale-[1.02] border-2 border-withdrawal/20">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10 flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
+                <div className="p-2 sm:p-3 lg:p-4 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 group-hover:bg-white/30 transition-all shrink-0">
+                  <ArrowUpFromLine className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8" />
+                </div>
+                <div className="flex-1 min-w-0 text-center sm:text-left">
+                  <h3 className="text-xs sm:text-sm lg:text-xl font-bold">Retrait</h3>
+                  <p className="text-[10px] sm:text-xs lg:text-sm text-white/90 hidden sm:block">Retirez vos gains</p>
+                </div>
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold group-hover:translate-x-1 transition-transform shrink-0 hidden sm:block">
+                  →
+                </div>
+              </div>
+            </div>
+          </Link>
 
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <Link href="/dashboard/history">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Voir l'historique</CardTitle>
-                <History className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <p className="text-xs text-muted-foreground">Consultez vos transactions</p>
-              </CardContent>
-            </Link>
-          </Card>
+          <Link href="/dashboard/phones" className="group">
+            <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary via-primary/90 to-primary/80 p-3 sm:p-4 lg:p-6 text-white shadow-lg hover:shadow-xl hover:shadow-primary/40 transition-all duration-300 hover:scale-[1.02] border-2 border-primary/20">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10 flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
+                <div className="p-2 sm:p-3 lg:p-4 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 group-hover:bg-white/30 transition-all shrink-0">
+                  <Phone className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8" />
+                </div>
+                <div className="flex-1 min-w-0 text-center sm:text-left">
+                  <h3 className="text-xs sm:text-sm lg:text-xl font-bold leading-tight">Numéros & IDs</h3>
+                  <p className="text-[10px] sm:text-xs lg:text-sm text-white/90 hidden sm:block">Gérez vos numéros et IDs</p>
+                </div>
+                <div className="text-lg sm:text-xl lg:text-2xl font-bold group-hover:translate-x-1 transition-transform shrink-0 hidden sm:block">
+                  →
+                </div>
+              </div>
+            </div>
+          </Link>
         </div>
       </div>
 
       {/* Recent activity */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold">Activité récente</h2>
-          <div className="flex items-center gap-2">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Activité récente</h2>
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <Button 
               variant="outline" 
               size="sm"
               onClick={fetchRecentTransactions}
               disabled={isLoadingTransactions}
+              className="rounded-xl border-2 flex-1 sm:flex-initial"
             >
               <RefreshCw className={`h-4 w-4 ${isLoadingTransactions ? 'animate-spin' : ''}`} />
             </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/dashboard/history" className="flex items-center gap-2">
-                Voir tout
+            <Button asChild variant="outline" size="sm" className="rounded-xl border-2 flex-1 sm:flex-initial">
+              <Link href="/dashboard/history" className="flex items-center justify-center gap-2">
+                <span className="hidden sm:inline">Voir tout</span>
+                <span className="sm:hidden">Tout</span>
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>
@@ -178,57 +209,83 @@ export default function DashboardPage() {
         </div>
         
         {isLoadingTransactions ? (
-          <Card>
-            <CardContent className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <Card className="border-2">
+            <CardContent className="flex items-center justify-center py-8 sm:py-12">
+              <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-primary" />
             </CardContent>
           </Card>
         ) : recentTransactions.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
-              <Wallet className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-muted-foreground text-center">Aucune transaction récente</p>
-              <p className="text-sm text-muted-foreground text-center mt-1">Vos transactions apparaîtront ici</p>
+          <Card className="border-2 border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12 sm:py-16">
+              <div className="p-3 sm:p-4 rounded-2xl bg-muted/50 mb-4 sm:mb-6">
+                <Wallet className="h-12 w-12 sm:h-16 sm:w-16 text-muted-foreground" />
+              </div>
+              <p className="text-base sm:text-lg font-semibold text-muted-foreground text-center mb-1 sm:mb-2">Aucune transaction récente</p>
+              <p className="text-xs sm:text-sm text-muted-foreground text-center">Vos transactions apparaîtront ici</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {recentTransactions.map((transaction) => (
-              <Card key={transaction.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-full ${
+              <Card key={transaction.id} className="group hover:shadow-xl hover:scale-[1.01] transition-all duration-300 border-2 border-transparent hover:border-primary/20 bg-gradient-to-r from-card via-card to-transparent hover:via-primary/5">
+                <CardContent className="p-3 sm:p-4 lg:p-5">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                    <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 w-full">
+                      <div className={`p-2 sm:p-3 rounded-xl shrink-0 ${
                         transaction.type_trans === "deposit" 
-                          ? "bg-green-500/10 text-green-500" 
-                          : "bg-blue-500/10 text-blue-500"
+                          ? "bg-gradient-to-br from-deposit/20 to-deposit/10 text-deposit ring-2 ring-deposit/10" 
+                          : "bg-gradient-to-br from-withdrawal/20 to-withdrawal/10 text-withdrawal ring-2 ring-withdrawal/10"
                       }`}>
                         {transaction.type_trans === "deposit" ? (
-                          <ArrowDownToLine className="h-4 w-4" />
+                          <ArrowDownToLine className="h-4 w-4 sm:h-5 sm:w-5" />
                         ) : (
-                          <ArrowUpFromLine className="h-4 w-4" />
+                          <ArrowUpFromLine className="h-4 w-4 sm:h-5 sm:w-5" />
                         )}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">#{transaction.reference}</h3>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-1 sm:mb-1.5">
+                          <div className="flex items-center gap-1.5 sm:gap-2">
+                            <h3 className="font-bold text-sm sm:text-base text-foreground">#{transaction.reference}</h3>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 sm:h-6 sm:w-6 rounded-md hover:bg-muted"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                copyReference(transaction.reference)
+                              }}
+                              title="Copier la référence"
+                            >
+                              {copiedReference === transaction.reference ? (
+                                <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-green-600" />
+                              ) : (
+                                <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground hover:text-foreground" />
+                              )}
+                            </Button>
+                          </div>
                           {getTypeBadge(transaction.type_trans)}
                           {getStatusBadge(transaction.status)}
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {transaction.app} • {transaction.phone_number}
-                        </p>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground">
+                          <span className="font-medium">{transaction.app}</span>
+                          <span className="hidden sm:inline">•</span>
+                          <span className="truncate">{transaction.phone_number}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-lg font-semibold">
+                    <div className="text-left sm:text-right shrink-0 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 flex sm:flex-col items-start sm:items-end justify-between sm:justify-start gap-1 sm:gap-1">
+                      <p className={`text-base sm:text-lg font-bold ${
+                        transaction.type_trans === "deposit" ? "text-deposit" : "text-withdrawal"
+                      }`}>
+                        {transaction.type_trans === "deposit" ? "+" : "-"}
                         {transaction.amount.toLocaleString("fr-FR", {
                           style: "currency",
                           currency: "XOF",
                           minimumFractionDigits: 0,
                         })}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
                         {format(new Date(transaction.created_at), "dd MMM à HH:mm", {
                           locale: fr,
                         })}
