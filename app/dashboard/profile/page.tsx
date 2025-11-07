@@ -8,12 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { ArrowLeft, Edit, Save, X, Loader2, Eye, EyeOff } from "lucide-react"
-import { userApi } from "@/lib/api-client"
 import { toast } from "react-hot-toast"
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user, updateUser } = useAuth()
+  const { user } = useAuth()
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
