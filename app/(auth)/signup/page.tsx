@@ -47,7 +47,10 @@ export default function SignupPage() {
   const [showRePassword, setShowRePassword] = useState(false)
   const { referralBonus, isLoading: isLoadingSettings } = useSettings()
 
-  const signupSchema = createSignupSchema(referralBonus)
+  // Use referralBonus only if settings loaded successfully, otherwise default to false
+  const shouldShowReferralCode = !isLoadingSettings && referralBonus
+
+  const signupSchema = createSignupSchema(shouldShowReferralCode)
   type SignupFormData = z.infer<typeof signupSchema>
 
   const {
@@ -79,7 +82,8 @@ export default function SignupPage() {
       }
 
       // Only include referral_code if referral_bonus is enabled and code is provided
-      if (referralBonus && 'referral_code' in data) {
+      // Proceed without referral_code if settings API failed
+      if (shouldShowReferralCode && 'referral_code' in data) {
         const referralCode = data.referral_code as string | undefined
         if (referralCode && referralCode.trim() !== "") {
           registerData.referral_code = referralCode.trim()
@@ -97,13 +101,8 @@ export default function SignupPage() {
     }
   }
 
-  if (isLoadingSettings) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )
-  }
+  // Don't block the form if settings are loading - proceed without referral field
+  // If settings API fails, referralBonus will be false and form works normally
 
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row overflow-x-hidden">
@@ -272,7 +271,7 @@ export default function SignupPage() {
                 {errors.re_password && <p className="text-xs sm:text-sm text-destructive">{errors.re_password.message}</p>}
               </div>
 
-              {referralBonus && (
+              {shouldShowReferralCode && (
                 <div className="space-y-2">
                   <Label htmlFor="referral_code" className="text-xs sm:text-sm font-semibold">Code de parrainage (optionnel)</Label>
                   <Input
