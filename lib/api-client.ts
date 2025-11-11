@@ -9,6 +9,10 @@ import type {
   PaginatedResponse,
   Notification,
   Bonus,
+  SearchUserResponse,
+  Advertisement,
+  Settings,
+  Coupon,
 } from "./types"
 
 export const authApi = {
@@ -27,6 +31,7 @@ export const authApi = {
     phone: string
     password: string
     re_password: string
+    referral_code?: string
   }) => {
     const { data } = await api.post("/auth/registration", userData)
     return data
@@ -34,6 +39,30 @@ export const authApi = {
 
   refreshToken: async (refresh: string) => {
     const { data } = await api.post("/auth/token/refresh/", { refresh })
+    return data
+  },
+
+  getProfile: async () => {
+    const { data } = await api.get<User>("/auth/me")
+    return data
+  },
+
+  updateProfile: async (profileData: {
+    first_name: string
+    last_name: string
+    email: string
+    phone: string
+  }) => {
+    const { data } = await api.patch<User>("/auth/edit", profileData)
+    return data
+  },
+
+  changePassword: async (passwordData: {
+    old_password: string
+    new_password: string
+    confirm_new_password: string
+  }) => {
+    const { data } = await api.post("/auth/change_password", passwordData)
     return data
   },
 }
@@ -103,6 +132,17 @@ export const userAppIdApi = {
 
   delete: async (id: number) => {
     await api.delete(`/mobcash/user-app-id/${id}/`)
+  },
+
+  searchUser: async (appId: string, betId: string) => {
+    const { data } = await api.post<SearchUserResponse>(
+      `/mobcash/search-user`,
+      {
+        app_id: appId,
+        userid: betId
+      }
+    )
+    return data
   },
 }
 
@@ -183,5 +223,26 @@ export const fcmApi = {
 
   deleteToken: async (token: string) => {
     await api.delete(`/mobcash/fcm-token/${token}/`)
+  },
+}
+
+export const advertisementApi = {
+  get: async () => {
+    const { data } = await api.get<Advertisement>("/mobcash/ann")
+    return data
+  },
+}
+
+export const settingsApi = {
+  get: async () => {
+    const { data } = await api.get<Settings>("/mobcash/setting")
+    return data
+  },
+}
+
+export const couponApi = {
+  getAll: async (page = 1) => {
+    const { data } = await api.get<PaginatedResponse<Coupon>>(`/mobcash/coupon?page=${page}`)
+    return data
   },
 }

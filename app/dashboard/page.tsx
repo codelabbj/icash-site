@@ -5,23 +5,28 @@ import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { ArrowDownToLine, ArrowUpFromLine, History, Wallet, Loader2, ArrowRight, RefreshCw, Copy, Check, Phone, Smartphone } from "lucide-react"
+import { ArrowDownToLine, ArrowUpFromLine, History, Wallet, Loader2, ArrowRight, RefreshCw, Copy, Check, Phone, Smartphone, Gift } from "lucide-react"
 import Link from "next/link"
-import { transactionApi } from "@/lib/api-client"
+import { transactionApi, advertisementApi } from "@/lib/api-client"
 import type { Transaction } from "@/lib/types"
 import { toast } from "react-hot-toast"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
+import { useSettings } from "@/lib/hooks/use-settings"
 
 export default function DashboardPage() {
   const { user } = useAuth()
+  const { referralBonus } = useSettings()
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([])
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
   const [copiedReference, setCopiedReference] = useState<string | null>(null)
+  const [advertisement, setAdvertisement] = useState<string | null>(null)
+  const [isLoadingAd, setIsLoadingAd] = useState(true)
 
   useEffect(() => {
     if (user) {
       fetchRecentTransactions()
+      fetchAdvertisement()
     }
   }, [user])
 
@@ -49,6 +54,29 @@ export default function DashboardPage() {
       toast.error("Erreur lors du chargement des transactions récentes")
     } finally {
       setIsLoadingTransactions(false)
+    }
+  }
+
+  const fetchAdvertisement = async () => {
+    try {
+      setIsLoadingAd(true)
+      const data = await advertisementApi.get()
+      // Check if advertisement has image URL
+      // Handle different response formats: object with image field, or direct string
+      if (data) {
+        if (data?.image && typeof data.image === 'string' && data.image.trim() !== '') {
+          setAdvertisement(data.image)
+        } else {
+          setAdvertisement(null)
+        }
+      } else {
+        setAdvertisement(null)
+      }
+    } catch (error) {
+      console.error("Error fetching advertisement:", error)
+      setAdvertisement(null)
+    } finally {
+      setIsLoadingAd(false)
     }
   }
 
@@ -181,23 +209,57 @@ export default function DashboardPage() {
               </div>
             </div>
           </Link>
+
+          {referralBonus && (
+            <Link href="/dashboard/bonus" className="group">
+              <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-yellow-500 via-yellow-500/90 to-yellow-500/80 p-3 sm:p-4 lg:p-6 text-white shadow-lg hover:shadow-xl hover:shadow-yellow-500/40 transition-all duration-300 hover:scale-[1.02] border-2 border-yellow-500/20">
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                <div className="relative z-10 flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
+                  <div className="p-2 sm:p-3 lg:p-4 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 group-hover:bg-white/30 transition-all shrink-0">
+                    <Gift className="h-5 w-5 sm:h-6 sm:w-6 lg:h-8 lg:w-8" />
+                  </div>
+                  <div className="flex-1 min-w-0 text-center sm:text-left">
+                    <h3 className="text-xs sm:text-sm lg:text-xl font-bold leading-tight">Bonus</h3>
+                    <p className="text-[10px] sm:text-xs lg:text-sm text-white/90 hidden sm:block">Voir mes bonus</p>
+                  </div>
+                  <div className="text-lg sm:text-xl lg:text-2xl font-bold group-hover:translate-x-1 transition-transform shrink-0 hidden sm:block">
+                    →
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
         </div>
       </div>
 
       {/* Advertisement section */}
-      <div className="space-y-4 sm:space-y-6">
-        <Card className="border-2 overflow-hidden hover:shadow-lg transition-shadow duration-300">
-          <CardContent className="p-0">
-            <div className="relative w-full aspect-[3/1] bg-muted">
-              <img
-                src="/placeholder.jpg"
-                alt="Advertisement"
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {!isLoadingAd && (
+        <div className="space-y-4 sm:space-y-6">
+          <Card className="border-2 overflow-hidden hover:shadow-lg transition-shadow duration-300">
+            <CardContent className="p-0">
+              <div className="relative w-full aspect-[3/1] bg-muted">
+                {advertisement ? (
+                  <img
+                    src={advertisement}
+                    alt="Advertisement"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      // Fallback to placeholder if image fails to load
+                      e.currentTarget.src = "/placeholder.jpg"
+                    }}
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-muted">
+                    <div className="text-center text-muted-foreground">
+                      <p className="text-sm">Publicité</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Recent activity */}
       <div className="space-y-4 sm:space-y-6">

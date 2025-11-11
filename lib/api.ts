@@ -58,12 +58,20 @@ api.interceptors.response.use(
     const fallback =
       defaultLang === "fr" ? "Une erreur est survenue. Veuillez réessayer." : "An unexpected error occurred."
 
-    const backendMsg =
-      error.response?.data?.details ||
-      error.response?.data?.detail ||
-      error.response?.data?.error ||
-      error.response?.data?.message || fallback
-      //(typeof error.response?.data === "string" ? error.response.data : fallback)
+    // Check for rate limiting error (error_time_message) first
+    let backendMsg = fallback
+    if (error.response?.data?.error_time_message) {
+      const timeMessage = Array.isArray(error.response.data.error_time_message)
+        ? error.response.data.error_time_message[0]
+        : error.response.data.error_time_message
+      backendMsg = `Veuillez patienter ${timeMessage} avant de créer une nouvelle transaction`
+    } else {
+      backendMsg =
+        error.response?.data?.details ||
+        error.response?.data?.detail ||
+        error.response?.data?.error ||
+        error.response?.data?.message || fallback
+    }
 
     const lang = detectLang(backendMsg)
     toast.error(backendMsg, { style: { direction: "ltr" } })

@@ -78,8 +78,12 @@ export default function WithdrawalPage() {
       
       toast.success("Retrait initié avec succès!")
       router.push("/dashboard")
-    } catch (error) {
-      toast.error("Erreur lors de la création du retrait")
+    } catch (error: any) {
+      // Error message is already handled by API interceptor
+      // Only show additional toast if it's not the rate limiting error
+      if (!error?.response?.data?.error_time_message) {
+        // Generic error toast is already shown by interceptor, but we can add context if needed
+      }
     } finally {
       setIsSubmitting(false)
     }

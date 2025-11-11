@@ -17,6 +17,14 @@ import { transactionApi } from "@/lib/api-client"
 import type { Platform, UserAppId, Network, UserPhone } from "@/lib/types"
 import { toast } from "react-hot-toast"
 import { normalizePhoneNumber } from "@/lib/utils"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 export default function DepositPage() {
   const router = useRouter()
@@ -36,6 +44,10 @@ export default function DepositPage() {
   // Confirmation dialog
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Transaction link modal
+  const [transactionLink, setTransactionLink] = useState<string | null>(null)
+  const [isTransactionLinkModalOpen, setIsTransactionLinkModalOpen] = useState(false)
 
   // Redirect if not authenticated
   if (!user) {
@@ -65,7 +77,7 @@ export default function DepositPage() {
 
     setIsSubmitting(true)
     try {
-      await transactionApi.createDeposit({
+      const response = await transactionApi.createDeposit({
         amount,
         phone_number: normalizePhoneNumber(selectedPhone.phone),
         app: selectedPlatform.id,
@@ -75,11 +87,31 @@ export default function DepositPage() {
       })
       
       toast.success("Dépôt initié avec succès!")
-      router.push("/dashboard")
-    } catch (error) {
-      toast.error("Erreur lors de la création du dépôt")
+      
+      // Check if transaction_link exists in the response
+      if (response.transaction_link) {
+        setTransactionLink(response.transaction_link)
+        setIsTransactionLinkModalOpen(true)
+        setIsConfirmationOpen(false)
+      } else {
+        router.push("/dashboard")
+      }
+    } catch (error: any) {
+      // Error message is already handled by API interceptor
+      // Only show additional toast if it's not the rate limiting error
+      if (!error?.response?.data?.error_time_message) {
+        // Generic error toast is already shown by interceptor, but we can add context if needed
+      }
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleContinueTransaction = () => {
+    if (transactionLink) {
+      window.open(transactionLink, "_blank", "noopener,noreferrer")
+      setIsTransactionLinkModalOpen(false)
+      router.push("/dashboard")
     }
   }
 
@@ -216,6 +248,23 @@ export default function DepositPage() {
           networkName={selectedNetwork?.public_name || ""}
           isLoading={isSubmitting}
         />
+
+        {/* Transaction Link Modal */}
+        <Dialog open={isTransactionLinkModalOpen} onOpenChange={setIsTransactionLinkModalOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Continuer la transaction</DialogTitle>
+              <DialogDescription>
+                Cliquez sur continuer pour continuer la transaction
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button onClick={handleContinueTransaction}>
+                Continuer
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   )

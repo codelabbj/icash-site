@@ -150,3 +150,29 @@ export interface Bonus {
   transaction: number | null
   user: string
 }
+
+export interface SearchUserResponse {
+  UserId: number
+  Name: string
+  CurrencyId: number
+}
+
+export interface Advertisement {
+  id?: number
+  image?: string
+  url?: string
+  title?: string
+  description?: string
+}
+
+export interface Settings {
+  referral_bonus?: boolean
+  [key: string]: any
+}
+
+export interface Coupon {
+  id: number
+  created_at: string
+  code: string
+  bet_app: string
+}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
@@ -10,29 +10,63 @@ import { Label } from "@/components/ui/label"
 import { ArrowLeft, Edit, Save, X, Loader2, Eye, EyeOff } from "lucide-react"
 import { toast } from "react-hot-toast"
 import { normalizePhoneNumber } from "@/lib/utils"
+import { authApi } from "@/lib/api-client"
+import type { User } from "@/lib/types"
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user: authUser } = useAuth()
+  const [user, setUser] = useState<User | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+  const [isChangingPassword, setIsChangingPassword] = useState(false)
+  const [isLoadingPassword, setIsLoadingPassword] = useState(false)
+  const [showOldPassword, setShowOldPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState({
-    first_name: user?.first_name || "",
-    last_name: user?.last_name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    password: "",
-    confirm_password: "",
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone: "",
+  })
+
+  // Password change form state
+  const [passwordData, setPasswordData] = useState({
+    old_password: "",
+    new_password: "",
+    confirm_new_password: "",
   })
 
   // Redirect if not authenticated
-  if (!user) {
-    router.push("/login")
-    return null
+  useEffect(() => {
+    if (!authUser) {
+      router.push("/login")
+      return
+    }
+    fetchProfile()
+  }, [authUser, router])
+
+  const fetchProfile = async () => {
+    try {
+      setIsLoadingProfile(true)
+      const profileData = await authApi.getProfile()
+      setUser(profileData)
+      setFormData({
+        first_name: profileData.first_name || "",
+        last_name: profileData.last_name || "",
+        email: profileData.email || "",
+        phone: profileData.phone || "",
+      })
+    } catch (error) {
+      console.error("Error fetching profile:", error)
+      toast.error("Erreur lors du chargement du profil")
+    } finally {
+      setIsLoadingProfile(false)
+    }
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -44,74 +78,125 @@ export default function ProfilePage() {
   }
 
   const handleEdit = () => {
+    if (!user) return
     setIsEditing(true)
     setFormData({
-      first_name: user.first_name,
-      last_name: user.last_name,
-      email: user.email,
-      phone: user.phone,
-      password: "",
-      confirm_password: "",
+      first_name: user.first_name || "",
+      last_name: user.last_name || "",
+      email: user.email || "",
+      phone: user.phone || "",
     })
   }
 
   const handleCancel = () => {
+    if (!user) return
     setIsEditing(false)
     setFormData({
-      first_name: user.first_name,
-      last_name: user.last_name,
-      email: user.email,
-      phone: user.phone,
-      password: "",
-      confirm_password: "",
+      first_name: user.first_name || "",
+      last_name: user.last_name || "",
+      email: user.email || "",
+      phone: user.phone || "",
     })
   }
 
   const handleSave = async () => {
-    // Validate passwords match if password is being changed
-    if (formData.password && formData.password !== formData.confirm_password) {
-      toast.error("Les mots de passe ne correspondent pas")
+    if (!formData.first_name.trim() || !formData.last_name.trim()) {
+      toast.error("Le prénom et le nom sont requis")
       return
     }
 
-    // Validate password length if provided
-    if (formData.password && formData.password.length < 8) {
-      toast.error("Le mot de passe doit contenir au moins 8 caractères")
+    if (!formData.email.trim()) {
+      toast.error("L'email est requis")
       return
     }
 
     setIsLoading(true)
     try {
-      // Prepare update data
-      const updateData: any = {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        email: formData.email,
+      const updatedUser = await authApi.updateProfile({
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        email: formData.email.trim(),
         phone: normalizePhoneNumber(formData.phone),
-      }
+      })
 
-      // Only include password if it's being changed
-      if (formData.password) {
-        updateData.password = formData.password
-      }
-
-      // TODO : Api call to update the user datas
-
+      setUser(updatedUser)
       toast.success("Profil mis à jour avec succès!")
       setIsEditing(false)
-
-      // Clear password fields
-      setFormData((prev) => ({
-        ...prev,
-        password: "",
-        confirm_password: "",
-      }))
     } catch (error) {
       console.error("Error updating profile:", error)
       toast.error("Erreur lors de la mise à jour du profil")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handlePasswordInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setPasswordData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleChangePassword = async () => {
+    if (!passwordData.old_password.trim()) {
+      toast.error("Veuillez entrer votre mot de passe actuel")
+      return
+    }
+
+    if (!passwordData.new_password.trim()) {
+      toast.error("Veuillez entrer un nouveau mot de passe")
+      return
+    }
+
+    if (passwordData.new_password.length < 6) {
+      toast.error("Le nouveau mot de passe doit contenir au moins 6 caractères")
+      return
+    }
+
+    if (passwordData.new_password !== passwordData.confirm_new_password) {
+      toast.error("Les nouveaux mots de passe ne correspondent pas")
+      return
+    }
+
+    setIsLoadingPassword(true)
+    try {
+      await authApi.changePassword({
+        old_password: passwordData.old_password,
+        new_password: passwordData.new_password,
+        confirm_new_password: passwordData.confirm_new_password,
+      })
+
+      toast.success("Mot de passe modifié avec succès!")
+      setIsChangingPassword(false)
+      setPasswordData({
+        old_password: "",
+        new_password: "",
+        confirm_new_password: "",
+      })
+    } catch (error) {
+      console.error("Error changing password:", error)
+      toast.error("Erreur lors de la modification du mot de passe")
+    } finally {
+      setIsLoadingPassword(false)
+    }
+  }
+
+  const handleCancelPasswordChange = () => {
+    setIsChangingPassword(false)
+    setPasswordData({
+      old_password: "",
+      new_password: "",
+      confirm_new_password: "",
+    })
+  }
+
+  if (isLoadingProfile || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
@@ -232,74 +317,6 @@ export default function ProfilePage() {
               )}
             </div>
 
-            {/* Password fields - only show when editing */}
-            {isEditing && (
-              <>
-                <div className="pt-4 border-t">
-                  <h3 className="text-sm font-semibold mb-4">Changer le mot de passe (optionnel)</h3>
-                  <div className="space-y-4">
-                    {/* New Password */}
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Nouveau mot de passe</Label>
-                      <div className="relative">
-                        <Input
-                          id="password"
-                          name="password"
-                          type={showPassword ? "text" : "password"}
-                          value={formData.password}
-                          onChange={handleInputChange}
-                          placeholder="Minimum 8 caractères"
-                          className="rounded-xl pr-10"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-                          onClick={() => setShowPassword(!showPassword)}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Confirm Password */}
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm_password">Confirmer le mot de passe</Label>
-                      <div className="relative">
-                        <Input
-                          id="confirm_password"
-                          name="confirm_password"
-                          type={showConfirmPassword ? "text" : "password"}
-                          value={formData.confirm_password}
-                          onChange={handleInputChange}
-                          placeholder="Confirmez votre mot de passe"
-                          className="rounded-xl pr-10"
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
-                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4 text-muted-foreground" />
-                          ) : (
-                            <Eye className="h-4 w-4 text-muted-foreground" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </>
-            )}
-
             {/* Action buttons when editing */}
             {isEditing && (
               <div className="flex gap-3 pt-4">
@@ -329,6 +346,151 @@ export default function ProfilePage() {
                   <X className="h-4 w-4 mr-2" />
                   Annuler
                 </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Change Password Card */}
+        <Card className="border-2">
+          <CardHeader>
+            <CardTitle>Changer le mot de passe</CardTitle>
+            <CardDescription>
+              {isChangingPassword
+                ? "Modifiez votre mot de passe et cliquez sur enregistrer"
+                : "Sécurisez votre compte en changeant régulièrement votre mot de passe"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {!isChangingPassword ? (
+              <Button
+                onClick={() => setIsChangingPassword(true)}
+                variant="outline"
+                className="w-full rounded-xl"
+              >
+                Changer le mot de passe
+              </Button>
+            ) : (
+              <div className="space-y-4">
+                {/* Old Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="old_password">Mot de passe actuel</Label>
+                  <div className="relative">
+                    <Input
+                      id="old_password"
+                      name="old_password"
+                      type={showOldPassword ? "text" : "password"}
+                      value={passwordData.old_password}
+                      onChange={handlePasswordInputChange}
+                      placeholder="Entrez votre mot de passe actuel"
+                      className="rounded-xl pr-10"
+                      disabled={isLoadingPassword}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      onClick={() => setShowOldPassword(!showOldPassword)}
+                    >
+                      {showOldPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* New Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="new_password">Nouveau mot de passe</Label>
+                  <div className="relative">
+                    <Input
+                      id="new_password"
+                      name="new_password"
+                      type={showNewPassword ? "text" : "password"}
+                      value={passwordData.new_password}
+                      onChange={handlePasswordInputChange}
+                      placeholder="Minimum 6 caractères"
+                      className="rounded-xl pr-10"
+                      disabled={isLoadingPassword}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Confirm New Password */}
+                <div className="space-y-2">
+                  <Label htmlFor="confirm_new_password">Confirmer le nouveau mot de passe</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirm_new_password"
+                      name="confirm_new_password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={passwordData.confirm_new_password}
+                      onChange={handlePasswordInputChange}
+                      placeholder="Confirmez votre nouveau mot de passe"
+                      className="rounded-xl pr-10"
+                      disabled={isLoadingPassword}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Action buttons */}
+                <div className="flex gap-3 pt-2">
+                  <Button
+                    onClick={handleChangePassword}
+                    disabled={isLoadingPassword}
+                    className="flex-1 rounded-xl"
+                  >
+                    {isLoadingPassword ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Modification...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Enregistrer
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={handleCancelPasswordChange}
+                    variant="outline"
+                    disabled={isLoadingPassword}
+                    className="flex-1 rounded-xl"
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Annuler
+                  </Button>
+                </div>
               </div>
             )}
           </CardContent>

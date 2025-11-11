@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Loader2, Plus, Edit, Trash2 } from "lucide-react"
+import { Loader2, Plus, Edit, Trash2, CheckCircle, XCircle } from "lucide-react"
 import { userAppIdApi } from "@/lib/api-client"
 import type { UserAppId, Platform } from "@/lib/types"
 import { toast } from "react-hot-toast"
@@ -26,6 +26,13 @@ export function BetIdStep({ selectedPlatform, selectedBetId, onSelect, onNext }:
   const [editingBetId, setEditingBetId] = useState<UserAppId | null>(null)
   const [newBetId, setNewBetId] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  
+  // Search functionality states
+  const [isSearching, setIsSearching] = useState(false)
+  const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false)
+  const [isErrorModalOpen, setIsErrorModalOpen] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+  const [pendingBetId, setPendingBetId] = useState<{ appId: string; betId: string; userName: string } | null>(null)
 
   useEffect(() => {
     if (selectedPlatform) {
@@ -47,20 +54,101 @@ export function BetIdStep({ selectedPlatform, selectedBetId, onSelect, onNext }:
     }
   }
 
-  const handleAddBetId = async () => {
-    if (!newBetId.trim() || !selectedPlatform) return
-    
+
+  const handleConfirmAddBetId = async () => {
+    if (!pendingBetId) return
+
     setIsSubmitting(true)
     try {
-      const newBetIdData = await userAppIdApi.create(newBetId.trim(), selectedPlatform.id)
+      const newBetIdData = await userAppIdApi.create(pendingBetId.betId, pendingBetId.appId)
       setBetIds(prev => [...prev, newBetIdData])
       setNewBetId("")
-      setIsAddDialogOpen(false)
+      setPendingBetId(null)
+      setIsConfirmationModalOpen(false)
       toast.success("ID de pari ajouté avec succès")
-    } catch (error) {
-      toast.error("Erreur lors de l'ajout de l'ID de pari")
+    } catch (error: any) {
+      // Handle API errors
+      if (error?.response?.status === 400) {
+        const errorData = error.response.data
+        if (errorData?.error_time_message) {
+          const timeMessage = Array.isArray(errorData.error_time_message)
+            ? errorData.error_time_message[0]
+            : errorData.error_time_message
+          toast.error(`Veuillez patienter ${timeMessage} avant de créer une nouvelle transaction`)
+        } else if (errorData?.user_app_id) {
+          const errorMsg = Array.isArray(errorData.user_app_id) ? errorData.user_app_id[0] : errorData.user_app_id
+          toast.error(errorMsg)
+        } else {
+          toast.error("Erreur lors de l'ajout de l'ID de pari")
+        }
+      } else {
+        toast.error("Erreur lors de l'ajout de l'ID de pari")
+      }
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleAddBetId = async () => {
+    if (!newBetId.trim() || !selectedPlatform) {
+      toast.error("Veuillez entrer un ID de pari")
+      return
+    }
+
+    // First, search/validate the bet ID
+    setIsSearching(true)
+    try {
+      const searchResult = await userAppIdApi.searchUser(selectedPlatform.id, newBetId.trim())
+      
+      // Validate user exists
+      if (searchResult.UserId === 0) {
+        setErrorMessage("Utilisateur non trouvé. Veuillez vérifier l'ID de pari.")
+        setIsErrorModalOpen(true)
+        setIsSearching(false)
+        return
+      }
+
+      // Validate currency (CurrencyId === 27 for XOF)
+      if (searchResult.CurrencyId !== 27) {
+        setErrorMessage("Cet utilisateur n'utilise pas la devise XOF. Veuillez vérifier votre compte.")
+        setIsErrorModalOpen(true)
+        setIsSearching(false)
+        return
+      }
+
+      // Valid user - show confirmation modal with search result
+      setPendingBetId({
+        appId: selectedPlatform.id,
+        betId: newBetId.trim(),
+        userName: searchResult.Name
+      })
+      setIsConfirmationModalOpen(true)
+      setIsAddDialogOpen(false) // Close the add dialog
+    } catch (error: any) {
+      // Handle API errors
+      if (error?.response?.status === 400) {
+        // Parse field-specific errors
+        const errorData = error.response.data
+        if (errorData?.error_time_message) {
+          const timeMessage = Array.isArray(errorData.error_time_message)
+            ? errorData.error_time_message[0]
+            : errorData.error_time_message
+          setErrorMessage(`Veuillez patienter ${timeMessage} avant de créer une nouvelle transaction`)
+        } else if (errorData?.userid) {
+          setErrorMessage(Array.isArray(errorData.userid) ? errorData.userid[0] : errorData.userid)
+        } else if (errorData?.app_id) {
+          setErrorMessage(Array.isArray(errorData.app_id) ? errorData.app_id[0] : errorData.app_id)
+        } else if (errorData?.detail) {
+          setErrorMessage(errorData.detail)
+        } else {
+          setErrorMessage("Erreur lors de la recherche. Veuillez réessayer.")
+        }
+      } else {
+        setErrorMessage("Erreur lors de la recherche. Veuillez réessayer.")
+      }
+      setIsErrorModalOpen(true)
+    } finally {
+      setIsSearching(false)
     }
   }
 
@@ -208,7 +296,7 @@ export function BetIdStep({ selectedPlatform, selectedBetId, onSelect, onNext }:
           <DialogHeader>
             <DialogTitle>Ajouter un ID de pari</DialogTitle>
             <DialogDescription>
-              Entrez votre ID de compte pour {selectedPlatform.name}
+              Recherchez et validez votre ID de compte pour {selectedPlatform.name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -219,22 +307,108 @@ export function BetIdStep({ selectedPlatform, selectedBetId, onSelect, onNext }:
                 value={newBetId}
                 onChange={(e) => setNewBetId(e.target.value)}
                 placeholder="Entrez votre ID de pari"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isSearching && !isSubmitting) {
+                    handleAddBetId()
+                  }
+                }}
+                disabled={isSearching || isSubmitting}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsAddDialogOpen(false)
+              setNewBetId("")
+            }} disabled={isSearching || isSubmitting}>
               Annuler
             </Button>
-            <Button onClick={handleAddBetId} disabled={!newBetId.trim() || isSubmitting}>
+            <Button onClick={handleAddBetId} disabled={!newBetId.trim() || isSearching || isSubmitting}>
+              {isSearching || isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isSearching ? "Recherche..." : "Ajout..."}
+                </>
+              ) : (
+                "Rechercher"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirmation Modal */}
+      <Dialog open={isConfirmationModalOpen} onOpenChange={setIsConfirmationModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Confirmer l'ajout
+            </DialogTitle>
+            <DialogDescription>
+              Voulez-vous ajouter cet ID de pari à vos IDs sauvegardés ?
+            </DialogDescription>
+          </DialogHeader>
+          {pendingBetId && (
+            <div className="space-y-2 py-4">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Nom:</span>
+                <span className="text-sm font-medium">{pendingBetId.userName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">ID de pari:</span>
+                <span className="text-sm font-medium">{pendingBetId.betId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Plateforme:</span>
+                <span className="text-sm font-medium">{selectedPlatform?.name}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setIsConfirmationModalOpen(false)
+                setPendingBetId(null)
+              }}
+            >
+              Annuler
+            </Button>
+            <Button onClick={handleConfirmAddBetId} disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Ajout...
                 </>
               ) : (
-                "Ajouter"
+                "Confirmer"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Modal */}
+      <Dialog open={isErrorModalOpen} onOpenChange={setIsErrorModalOpen}>
+        <DialogContent className="sm:max-w-md bg-white dark:bg-gray-900">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-600" />
+              Erreur
+            </DialogTitle>
+            <DialogDescription>
+              {errorMessage || "Une erreur est survenue"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button 
+              onClick={() => {
+                setIsErrorModalOpen(false)
+                setErrorMessage("")
+              }}
+            >
+              Fermer
             </Button>
           </DialogFooter>
         </DialogContent>

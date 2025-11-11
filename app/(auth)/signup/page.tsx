@@ -13,9 +13,10 @@ import { authApi } from "@/lib/api-client"
 import { toast } from "react-hot-toast"
 import { Loader2, UserPlus, CheckCircle, Eye, EyeOff } from "lucide-react"
 import { normalizePhoneNumber } from "@/lib/utils"
+import { useSettings } from "@/lib/hooks/use-settings"
 
-const signupSchema = z
-  .object({
+const createSignupSchema = (includeReferralCode: boolean) => {
+  const baseSchema = z.object({
     first_name: z.string().min(2, "Le prénom doit contenir au moins 2 caractères"),
     last_name: z.string().min(2, "Le nom doit contenir au moins 2 caractères"),
     email: z.string().email("Email invalide"),
@@ -23,18 +24,31 @@ const signupSchema = z
     password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères"),
     re_password: z.string().min(6, "Confirmation requise"),
   })
-  .refine((data) => data.password === data.re_password, {
+
+  if (includeReferralCode) {
+    return baseSchema.extend({
+      referral_code: z.string().optional(),
+    }).refine((data) => data.password === data.re_password, {
+      message: "Les mots de passe ne correspondent pas",
+      path: ["re_password"],
+    })
+  }
+
+  return baseSchema.refine((data) => data.password === data.re_password, {
     message: "Les mots de passe ne correspondent pas",
     path: ["re_password"],
   })
-
-type SignupFormData = z.infer<typeof signupSchema>
+}
 
 export default function SignupPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showRePassword, setShowRePassword] = useState(false)
+  const { referralBonus, isLoading: isLoadingSettings } = useSettings()
+
+  const signupSchema = createSignupSchema(referralBonus)
+  type SignupFormData = z.infer<typeof signupSchema>
 
   const {
     register,
@@ -47,10 +61,32 @@ export default function SignupPage() {
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true)
     try {
-      await authApi.register({
-        ...data,
+      const registerData: {
+        first_name: string
+        last_name: string
+        email: string
+        phone: string
+        password: string
+        re_password: string
+        referral_code?: string
+      } = {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        email: data.email,
         phone: normalizePhoneNumber(data.phone),
-      })
+        password: data.password,
+        re_password: data.re_password,
+      }
+
+      // Only include referral_code if referral_bonus is enabled and code is provided
+      if (referralBonus && 'referral_code' in data) {
+        const referralCode = data.referral_code as string | undefined
+        if (referralCode && referralCode.trim() !== "") {
+          registerData.referral_code = referralCode.trim()
+        }
+      }
+
+      await authApi.register(registerData)
       toast.success("Compte créé avec succès! Veuillez vous connecter.")
       router.push("/login")
     } catch (error) {
@@ -59,6 +95,14 @@ export default function SignupPage() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (isLoadingSettings) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
   }
 
   return (
@@ -227,6 +271,25 @@ export default function SignupPage() {
                 </div>
                 {errors.re_password && <p className="text-xs sm:text-sm text-destructive">{errors.re_password.message}</p>}
               </div>
+
+              {referralBonus && (
+                <div className="space-y-2">
+                  <Label htmlFor="referral_code" className="text-xs sm:text-sm font-semibold">Code de parrainage (optionnel)</Label>
+                  <Input
+                    id="referral_code"
+                    type="text"
+                    placeholder="Entrez votre code de parrainage"
+                    {...(register("referral_code" as any))}
+                    disabled={isLoading}
+                    className="h-11 sm:h-12 text-sm sm:text-base bg-background/50 border-primary/20 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                  {(errors as any).referral_code ? (
+                    <p className="text-xs sm:text-sm text-destructive">
+                      {(errors as any).referral_code?.message || "Erreur"}
+                    </p>
+                  ) : null}
+                </div>
+              )}
 
               <Button 
                 type="submit"
