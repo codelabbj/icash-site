@@ -100,7 +100,7 @@ export default function LoginPage() {
           <div className="mb-6 xl:mb-8">
               <Image src={logo} alt="logo" className="w-20 h-20 rounded-lg border-white/20 mb-6" />
             <h1 className="text-4xl xl:text-5xl font-bold mb-3 xl:mb-4 bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
-              ZEFEST
+              ZEFAST
             </h1>
             <p className="text-lg xl:text-xl text-white/90 max-w-md">
               Gérez vos dépôts et retraits en toute simplicité

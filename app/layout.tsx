@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ["latin"] })
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Zefest - Gestion de Dépôts et Retraits",
+  title: "Zefast - Gestion de Dépôts et Retraits",
   description: "Plateforme de gestion de transactions pour paris sportifs",
 
 }
