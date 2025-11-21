@@ -74,7 +74,7 @@ export function PlatformStep({ selectedPlatform, onSelect, onNext }: PlatformSte
                   />
                   <div className="flex-1 min-w-0 w-full">
                     <h3 className="font-semibold text-sm sm:text-base truncate">{platform.name}</h3>
-                    <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 mt-1.5 sm:mt-1">
+                    <div className="flex flex-col gap-1 sm:gap-2 mt-1.5 sm:mt-1">
                       <Badge variant="outline" className="text-[10px] sm:text-xs w-fit">
                         Min: {platform.minimun_deposit.toLocaleString()} FCFA
                       </Badge>

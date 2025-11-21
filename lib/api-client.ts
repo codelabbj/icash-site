@@ -1,18 +1,18 @@
 import api from "./api"
 import type {
-  AuthResponse,
-  Network,
-  UserPhone,
-  Platform,
-  UserAppId,
-  Transaction,
-  PaginatedResponse,
-  Notification,
-  Bonus,
-  SearchUserResponse,
-  Advertisement,
-  Settings,
-  Coupon,
+    AuthResponse,
+    Network,
+    UserPhone,
+    Platform,
+    UserAppId,
+    Transaction,
+    PaginatedResponse,
+    Notification,
+    Bonus,
+    SearchUserResponse,
+    Advertisement,
+    Settings,
+    Coupon, User,
 } from "./types"
 
 export const authApi = {
@@ -213,9 +213,9 @@ export const bonusApi = {
 
 export const fcmApi = {
   registerToken: async (token: string, platform: string = 'web', userId?: string | number) => {
-    const { data } = await api.post('/mobcash/fcm-token/', {
-      token,
-      platform,
+    const { data } = await api.post('/mobcash/devices/', {
+      registration_id:token,
+      type : platform,
       user_id: userId || null,
     })
     return data
@@ -228,7 +228,7 @@ export const fcmApi = {
 
 export const advertisementApi = {
   get: async () => {
-    const { data } = await api.get<Advertisement>("/mobcash/ann")
+    const { data } = await api.get<PaginatedResponse<Advertisement>>("/mobcash/ann")
     return data
   },
 }

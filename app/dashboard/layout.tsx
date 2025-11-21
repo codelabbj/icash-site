@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, User, Loader2, Bell } from "lucide-react"
+import { LogOut, User, Loader2, Bell, Ticket } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import Image from "next/image";
 import logo from "@/public/logo.png"
@@ -44,7 +44,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const userInitials = `${user.first_name?.[0] || ""}${user.last_name?.[0] || ""}`.toUpperCase()
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-background relative overflow-hidden">
       {/* Animated background gradient orbs */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div className="absolute top-0 -left-4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
@@ -75,8 +75,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="h-12 w-12 rounded-xl relative"
                 asChild
               >
-                <Link href="/notifications">
+                <Link href="/dashboard/notifications">
                   <Bell className="h-5 w-5" />
+                </Link>
+              </Button>
+              <Button
+                className="h-12 px-4 rounded-xl bg-gradient-to-r from-yellow-500 to-primary/40 text-white shadow-lg hover:shadow-xl hover:shadow-yellow-500/40 transition-all duration-300 hover:scale-105 border-2 border-yellow-500/20 font-semibold flex items-center gap-2"
+                asChild
+              >
+                <Link href="/dashboard/coupon" className="flex items-center gap-2">
+                  <Ticket className="h-5 w-5" />
+                  <span className="hidden sm:inline">Coupons</span>
                 </Link>
               </Button>
               <DropdownMenu>
@@ -116,7 +125,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </header>
 
       {/* Main content */}
-      <main className="container mx-auto px-4 py-8 relative z-10">{children}</main>
+      <main className="flex-1 container mx-auto px-4 py-8 relative z-20">{children}</main>
+
+        <footer className="w-full bg-background relative z-10 py-6 sm:py-8">
+            <div className="container mx-auto px-4 sm:px-6">
+                <div className="flex items-center justify-center">
+                    <p className="text-sm text-muted-foreground">
+                        Développé par{" "}
+                        <Link
+                            href="https://wa.me/22947030588"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-semibold text-primary hover:underline transition-all duration-300"
+                        >
+                            Code Lab
+                        </Link>
+                    </p>
+                </div>
+            </div>
+        </footer>
     </div>
   )
 }
