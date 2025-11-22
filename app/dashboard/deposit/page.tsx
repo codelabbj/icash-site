@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
+import {ArrowLeft, Check, CircleCheck, Copy} from "lucide-react"
 import { TransactionProgressBar } from "@/components/transaction/progress-bar"
 import { StepNavigation } from "@/components/transaction/step-navigation"
 import { ConfirmationDialog } from "@/components/transaction/confirmation-dialog"
@@ -25,10 +25,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {useSettings} from "@/lib/hooks/use-settings";
 
 export default function DepositPage() {
   const router = useRouter()
   const { user } = useAuth()
+    const {settings} = useSettings()
   
   // Step management
   const [currentStep, setCurrentStep] = useState(1)
@@ -40,7 +42,10 @@ export default function DepositPage() {
   const [selectedNetwork, setSelectedNetwork] = useState<Network | null>(null)
   const [selectedPhone, setSelectedPhone] = useState<UserPhone | null>(null)
   const [amount, setAmount] = useState(0)
-  
+
+    const [isMoovUSSDDialogOpen, setIsMoovUSSDDialogOpen] = useState(false)
+    const [moovUSSDCode, setMoovUSSDCode] = useState<string>("")
+    const [copiedUSSD, setCopiedUSSD] = useState(false)
   // Confirmation dialog
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -94,7 +99,29 @@ export default function DepositPage() {
         setIsTransactionLinkModalOpen(true)
         setIsConfirmationOpen(false)
       } else {
-        router.push("/dashboard")
+          // Check if Moov network and API is connected
+          const isMoov = selectedNetwork?.name?.toLowerCase() === "moov"
+          const isMoovConnected = selectedNetwork?.deposit_api === "connect" && isMoov
+
+          if (isMoovConnected && settings) {
+              // Generate USSD code: 155*2*1*settings.moov_marchand_phone*amount-1% of amount#
+              const fee = Math.ceil(amount * 0.01) // 1% fee
+              const netAmount = amount - fee
+              const ussdCode = `155*2*1*${settings.moov_marchand_phone}*${netAmount}#`
+
+              // Always show the USSD dialog
+              setIsMoovUSSDDialogOpen(true)
+              setMoovUSSDCode(ussdCode)
+              setIsConfirmationOpen(false)
+
+              setTimeout(() => {
+                  window.location.href = `tel:${ussdCode}`
+              }, 500)
+
+          } else {
+              toast.success("Dépôt initié avec succès!")
+              router.push("/dashboard")
+          }
       }
     } catch (error: any) {
       // Error message is already handled by API interceptor
@@ -140,7 +167,10 @@ export default function DepositPage() {
         return (
           <PlatformStep
             selectedPlatform={selectedPlatform}
-            onSelect={setSelectedPlatform}
+            onSelect={(platform)=>{
+                setSelectedPlatform(platform)
+                setTimeout(()=>{setCurrentStep(currentStep + 1)}, 1000)
+            }}
             onNext={handleNext}
           />
         )
@@ -149,7 +179,10 @@ export default function DepositPage() {
           <BetIdStep
             selectedPlatform={selectedPlatform}
             selectedBetId={selectedBetId}
-            onSelect={setSelectedBetId}
+            onSelect={(betId)=>{
+                setSelectedBetId(betId)
+                setTimeout(()=>{setCurrentStep(currentStep + 1)}, 1000)
+            }}
             onNext={handleNext}
           />
         )
@@ -157,7 +190,10 @@ export default function DepositPage() {
         return (
           <NetworkStep
             selectedNetwork={selectedNetwork}
-            onSelect={setSelectedNetwork}
+            onSelect={(network)=>{
+                setSelectedNetwork(network)
+                setTimeout(()=>{setCurrentStep(currentStep + 1)}, 1000)
+            }}
             type="deposit"
           />
         )
@@ -166,7 +202,10 @@ export default function DepositPage() {
           <PhoneStep
             selectedNetwork={selectedNetwork}
             selectedPhone={selectedPhone}
-            onSelect={setSelectedPhone}
+            onSelect={(phone)=>{
+                setSelectedPhone(phone)
+                setTimeout(()=>{setCurrentStep(currentStep + 1)}, 1000)
+            }}
             onNext={handleNext}
           />
         )
@@ -265,6 +304,77 @@ export default function DepositPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+          {/* Moov USSD Code Dialog */}
+          <Dialog open={isMoovUSSDDialogOpen} onOpenChange={setIsMoovUSSDDialogOpen}>
+              <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-xl">
+                          <CircleCheck className="h-5 w-5 text-primary" />
+                          Code USSD Moov
+                      </DialogTitle>
+                      <DialogDescription className="text-base pt-2">
+                          Vous êtes sur un ordinateur? Veuillez copier ce code et le saisir sur votre téléphone mobile.
+                      </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4">
+                      <div className="relative">
+                          <div className="bg-muted/50 p-4 rounded-lg border-2 border-primary/30">
+                              <code className="text-sm font-mono text-center break-all text-foreground">
+                                  {moovUSSDCode}
+                              </code>
+                          </div>
+                          <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                  navigator.clipboard.writeText(moovUSSDCode)
+                                  setCopiedUSSD(true)
+                                  setTimeout(() => setCopiedUSSD(false), 2000)
+                                  toast.success("Code copié!")
+                              }}
+                              className="absolute right-2 top-2 gap-2"
+                          >
+                              {copiedUSSD ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                      </div>
+                      <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
+                          <p className="text-sm text-foreground">
+                              <span className="font-semibold">Instructions:</span> Copiez le code ci-dessus, puis tapez-le sur votre téléphone mobile pour effectuer la transaction.
+                          </p>
+                      </div>
+                  </div>
+
+                  <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-3">
+                      <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                              setIsMoovUSSDDialogOpen(false)
+                              router.push("/dashboard")
+                          }}
+                          className="w-full sm:w-auto"
+                      >
+                          Fermer
+                      </Button>
+                      <Button
+                          type="button"
+                          onClick={() => {
+                              setIsMoovUSSDDialogOpen(false)
+                              toast.success("Dépôt initié avec succès!")
+                              router.push("/dashboard")
+                          }}
+                          className="w-full sm:w-auto"
+                      >
+                          Confirmer
+                      </Button>
+                  </DialogFooter>
+              </DialogContent>
+          </Dialog>
+
+
       </div>
     </div>
   )

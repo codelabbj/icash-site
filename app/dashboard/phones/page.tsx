@@ -37,8 +37,16 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+const COUNTRIES = [
+    { code: "225", name: "Côte d'Ivoire" },
+    { code: "229", name: "Bénin" },
+    { code: "221", name: "Sénégal" },
+    { code: "226", name: "Burkina Faso" },
+]
+
 const phoneSchema = z.object({
-  phone: z.string().min(8, "Numéro de téléphone invalide"),
+    country: z.string().min(1, "Pays requis"),
+    phone: z.string().min(8, "Numéro de téléphone invalide"),
   network: z.number().min(1, "Réseau requis"),
 })
 
@@ -88,26 +96,16 @@ export default function PhonesPage() {
   const loadData = async () => {
     setIsLoading(true)
     try {
-      const [phonesData, networksData, platformsData] = await Promise.all([
+      const [phonesData, networksData, platformsData, betIdData] = await Promise.all([
         phoneApi.getAll(),
         networkApi.getAll(),
         platformApi.getAll(),
+          userAppIdApi.getAll(),
       ])
       setUserPhones(phonesData)
       setNetworks(networksData)
       setPlatforms(platformsData)
-
-      // Load all app IDs for all platforms
-      const allAppIds: UserAppId[] = []
-      for (const platform of platformsData) {
-        try {
-          const appIds = await userAppIdApi.getByPlatform(platform.id.toString())
-          allAppIds.push(...appIds)
-        } catch (error) {
-          console.error(`Failed to load app IDs for platform ${platform.id}:`, error)
-        }
-      }
-      setUserAppIds(allAppIds)
+      setUserAppIds(betIdData)
     } catch (error) {
       console.error("Failed to load data:", error)
     } finally {
@@ -116,25 +114,38 @@ export default function PhonesPage() {
   }
 
   const handlePhoneSubmit = async (data: PhoneFormData) => {
-    setIsSubmitting(true)
-    try {
-      const normalizedPhone = normalizePhoneNumber(data.phone)
-      if (editingPhone) {
-        await phoneApi.update(editingPhone.id, normalizedPhone, data.network)
-        toast.success("Numéro modifié avec succès!")
-      } else {
-        await phoneApi.create(normalizedPhone, data.network)
-        toast.success("Numéro ajouté avec succès!")
+      setIsSubmitting(true)
+      try {
+          // Validate and clean phone number
+          const cleanedPhone = data.phone.trim().replace(/\s+/g, "")
+
+          // Check if phone number contains only digits
+          if (!/^\d+$/.test(cleanedPhone)) {
+              toast.error("Veuillez entrer uniquement des chiffres")
+              setIsSubmitting(false)
+              return
+          }
+
+          // Combine country code with cleaned phone number
+          const fullPhone = data.country + cleanedPhone
+
+          if (editingPhone) {
+              await phoneApi.update(editingPhone.id, fullPhone, data.network)
+              toast.success("Numéro modifié avec succès!")
+          } else {
+              await phoneApi.create(fullPhone, data.network)
+              toast.success("Numéro ajouté avec succès!")
+          }
+          setIsPhoneDialogOpen(false)
+          phoneForm.reset()
+          setEditingPhone(null)
+          loadData()
+      } catch (error) {
+          console.error("Phone operation error:", error)
+          toast.error("Erreur lors de l'opération téléphone")
+      } finally {
+          setIsSubmitting(false)
       }
-      setIsPhoneDialogOpen(false)
-      phoneForm.reset()
-      setEditingPhone(null)
-      loadData()
-    } catch (error) {
-      console.error("Phone operation error:", error)
-    } finally {
-      setIsSubmitting(false)
-    }
   }
 
   const handleAppIdSubmit = async (data: AppIdFormData) => {
@@ -262,42 +273,67 @@ export default function PhonesPage() {
                     </DialogDescription>
                   </DialogHeader>
                   <form onSubmit={phoneForm.handleSubmit(handlePhoneSubmit)} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Numéro de téléphone</Label>
-                      <Input
-                        id="phone"
-                        type="tel"
-                        placeholder="+225 01 02 03 04 05"
-                        {...phoneForm.register("phone")}
-                        disabled={isSubmitting}
-                      />
-                      {phoneForm.formState.errors.phone && (
-                        <p className="text-sm text-destructive">{phoneForm.formState.errors.phone.message}</p>
-                      )}
-                    </div>
+                      <div className="flex gap-2 w-full">
+                          <div className="space-y-2 w-full">
+                              <Label htmlFor="network">Réseau mobile</Label>
+                              <Select
+                                  onValueChange={(value) => phoneForm.setValue("network", Number.parseInt(value))}
+                                  defaultValue={editingPhone?.network.toString()}
+                                  disabled={isSubmitting}
+                              >
+                                  <SelectTrigger id="network" className="w-full">
+                                      <SelectValue placeholder="Sélectionnez un réseau" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      {networks.map((network) => (
+                                          <SelectItem key={network.id} value={network.id.toString()}>
+                                              {network.name}
+                                          </SelectItem>
+                                      ))}
+                                  </SelectContent>
+                              </Select>
+                              {phoneForm.formState.errors.network && (
+                                  <p className="text-sm text-destructive">{phoneForm.formState.errors.network.message}</p>
+                              )}
+                          </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="network">Réseau mobile</Label>
-                      <Select
-                        onValueChange={(value) => phoneForm.setValue("network", Number.parseInt(value))}
-                        defaultValue={editingPhone?.network.toString()}
-                        disabled={isSubmitting}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez un réseau" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {networks.map((network) => (
-                            <SelectItem key={network.id} value={network.id.toString()}>
-                              {network.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {phoneForm.formState.errors.network && (
-                        <p className="text-sm text-destructive">{phoneForm.formState.errors.network.message}</p>
-                      )}
-                    </div>
+                          <div className="space-y-2 w-full">
+                              <Label htmlFor="country">Pays</Label>
+                              <Select
+                                  onValueChange={(value) => phoneForm.setValue("country", value)}
+                                  defaultValue={editingPhone ? phoneForm.getValues("country") : "225"}
+                                  disabled={isSubmitting}
+                              >
+                                  <SelectTrigger id="country" className="w-full">
+                                      <SelectValue placeholder="Sélectionnez votre pays" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                      {COUNTRIES.map((country) => (
+                                          <SelectItem key={country.code} value={country.code}>
+                                              {country.name}
+                                          </SelectItem>
+                                      ))}
+                                  </SelectContent>
+                              </Select>
+                              {phoneForm.formState.errors.country && (
+                                  <p className="text-sm text-destructive">{phoneForm.formState.errors.country.message}</p>
+                              )}
+                          </div>
+                      </div>
+
+                      <div className="space-y-2 w-full">
+                          <Label htmlFor="phone">Numéro de téléphone</Label>
+                          <Input
+                              id="phone"
+                              type="tel"
+                              placeholder="+225 01 02 03 04 05"
+                              {...phoneForm.register("phone")}
+                              disabled={isSubmitting}
+                          />
+                          {phoneForm.formState.errors.phone && (
+                              <p className="text-sm text-destructive">{phoneForm.formState.errors.phone.message}</p>
+                          )}
+                      </div>
 
                     <div className="flex gap-3">
                       <Button
@@ -339,84 +375,87 @@ export default function PhonesPage() {
                   <p className="text-xs sm:text-sm text-muted-foreground">Ajoutez votre premier numéro pour commencer</p>
                 </div>
               ) : (
-                <div className="space-y-3 sm:hidden">
-                  {userPhones.map((phone) => (
-                    <Card key={phone.id} className="border-2">
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-muted-foreground mb-1">Numéro</p>
-                              <p className="font-medium text-sm truncate">{phone.phone}</p>
-                            </div>
+                  <>
+                      <div className="space-y-3 sm:hidden">
+                          {userPhones.map((phone) => (
+                              <Card key={phone.id} className="border-2">
+                                  <CardContent className="p-4">
+                                      <div className="space-y-3">
+                                          <div className="flex items-center justify-between">
+                                              <div className="flex-1 min-w-0">
+                                                  <p className="text-xs text-muted-foreground mb-1">Numéro</p>
+                                                  <p className="font-medium text-sm truncate">{phone.phone}</p>
+                                              </div>
+                                          </div>
+                                          <div className="flex items-center justify-between">
+                                              <div className="flex-1 min-w-0">
+                                                  <p className="text-xs text-muted-foreground mb-1">Réseau</p>
+                                                  <Badge variant="outline" className="text-xs">
+                                                      {networks.find((n) => n.id === phone.network)?.public_name || "Inconnu"}
+                                                  </Badge>
+                                              </div>
+                                          </div>
+                                          <div className="flex justify-end gap-2 pt-2 border-t">
+                                              <Button variant="ghost" size="sm" onClick={() => openEditPhoneDialog(phone)}>
+                                                  <Edit className="h-4 w-4 mr-1" />
+                                                  <span className="text-xs">Modifier</span>
+                                              </Button>
+                                              <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={() => setDeleteTarget({ type: "phone", id: phone.id })}
+                                              >
+                                                  <Trash2 className="h-4 w-4 mr-1 text-destructive" />
+                                                  <span className="text-xs">Supprimer</span>
+                                              </Button>
+                                          </div>
+                                      </div>
+                                  </CardContent>
+                              </Card>
+                          ))}
+                      </div>
+                      {userPhones.length > 0 && (
+                          <div className="hidden sm:block rounded-xl border-2 overflow-hidden">
+                              <Table>
+                                  <TableHeader>
+                                      <TableRow>
+                                          <TableHead>Numéro</TableHead>
+                                          <TableHead>Réseau</TableHead>
+                                          <TableHead className="text-right">Actions</TableHead>
+                                      </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                      {userPhones.map((phone) => (
+                                          <TableRow key={phone.id}>
+                                              <TableCell className="font-medium">{phone.phone}</TableCell>
+                                              <TableCell>
+                                                  <Badge variant="outline">
+                                                      {networks.find((n) => n.id === phone.network)?.public_name || "Inconnu"}
+                                                  </Badge>
+                                              </TableCell>
+                                              <TableCell className="text-right">
+                                                  <div className="flex justify-end gap-2">
+                                                      <Button variant="ghost" size="icon" onClick={() => openEditPhoneDialog(phone)}>
+                                                          <Edit className="h-4 w-4" />
+                                                      </Button>
+                                                      <Button
+                                                          variant="ghost"
+                                                          size="icon"
+                                                          onClick={() => setDeleteTarget({ type: "phone", id: phone.id })}
+                                                      >
+                                                          <Trash2 className="h-4 w-4 text-destructive" />
+                                                      </Button>
+                                                  </div>
+                                              </TableCell>
+                                          </TableRow>
+                                      ))}
+                                  </TableBody>
+                              </Table>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-muted-foreground mb-1">Réseau</p>
-                              <Badge variant="outline" className="text-xs">
-                                {networks.find((n) => n.id === phone.network)?.name || "Inconnu"}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="flex justify-end gap-2 pt-2 border-t">
-                            <Button variant="ghost" size="sm" onClick={() => openEditPhoneDialog(phone)}>
-                              <Edit className="h-4 w-4 mr-1" />
-                              <span className="text-xs">Modifier</span>
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeleteTarget({ type: "phone", id: phone.id })}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1 text-destructive" />
-                              <span className="text-xs">Supprimer</span>
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                      )}
+                  </>
               )}
-              {userPhones.length > 0 && (
-                <div className="hidden sm:block rounded-xl border-2 overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Numéro</TableHead>
-                        <TableHead>Réseau</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {userPhones.map((phone) => (
-                        <TableRow key={phone.id}>
-                          <TableCell className="font-medium">{phone.phone}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {networks.find((n) => n.id === phone.network)?.name || "Inconnu"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" onClick={() => openEditPhoneDialog(phone)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setDeleteTarget({ type: "phone", id: phone.id })}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+
             </CardContent>
           </Card>
         </TabsContent>
@@ -526,84 +565,87 @@ export default function PhonesPage() {
                   <p className="text-xs sm:text-sm text-muted-foreground">Ajoutez votre premier ID pour commencer</p>
                 </div>
               ) : (
-                <div className="space-y-3 sm:hidden">
-                  {userAppIds.map((appId, index) => (
-                    <Card key={`appId-mobile-${appId.id}-${appId.app || 'unknown'}-${index}`} className="border-2">
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-muted-foreground mb-1">ID de pari</p>
-                              <p className="font-medium text-sm truncate">{appId.user_app_id}</p>
-                            </div>
+                  <>
+                      <div className="space-y-3 sm:hidden">
+                          {userAppIds.map((appId, index) => (
+                              <Card key={`appId-mobile-${appId.id}-${appId.app || 'unknown'}-${index}`} className="border-2">
+                                  <CardContent className="p-4">
+                                      <div className="space-y-3">
+                                          <div className="flex items-center justify-between">
+                                              <div className="flex-1 min-w-0">
+                                                  <p className="text-xs text-muted-foreground mb-1">ID de pari</p>
+                                                  <p className="font-medium text-sm truncate">{appId.user_app_id}</p>
+                                              </div>
+                                          </div>
+                                          <div className="flex items-center justify-between">
+                                              <div className="flex-1 min-w-0">
+                                                  <p className="text-xs text-muted-foreground mb-1">Plateforme</p>
+                                                  <Badge variant="outline" className="text-xs">
+                                                      {platforms.find((p) => p.id === appId.app)?.name || "Inconnu"}
+                                                  </Badge>
+                                              </div>
+                                          </div>
+                                          <div className="flex justify-end gap-2 pt-2 border-t">
+                                              <Button variant="ghost" size="sm" onClick={() => openEditAppIdDialog(appId)}>
+                                                  <Edit className="h-4 w-4 mr-1" />
+                                                  <span className="text-xs">Modifier</span>
+                                              </Button>
+                                              <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={() => setDeleteTarget({ type: "appId", id: appId.id })}
+                                              >
+                                                  <Trash2 className="h-4 w-4 mr-1 text-destructive" />
+                                                  <span className="text-xs">Supprimer</span>
+                                              </Button>
+                                          </div>
+                                      </div>
+                                  </CardContent>
+                              </Card>
+                          ))}
+                      </div>
+                      {userAppIds.length > 0 && (
+                          <div className="hidden sm:block rounded-xl border-2 overflow-hidden">
+                              <Table>
+                                  <TableHeader>
+                                      <TableRow>
+                                          <TableHead>ID de pari</TableHead>
+                                          <TableHead>Plateforme</TableHead>
+                                          <TableHead className="text-right">Actions</TableHead>
+                                      </TableRow>
+                                  </TableHeader>
+                                  <TableBody>
+                                      {userAppIds.map((appId, index) => (
+                                          <TableRow key={`appId-table-${appId.id}-${appId.app || 'unknown'}-${index}`}>
+                                              <TableCell className="font-medium">{appId.user_app_id}</TableCell>
+                                              <TableCell>
+                                                  <Badge variant="outline">
+                                                      {platforms.find((p) => p.id === appId.app)?.name || "Inconnu"}
+                                                  </Badge>
+                                              </TableCell>
+                                              <TableCell className="text-right">
+                                                  <div className="flex justify-end gap-2">
+                                                      <Button variant="ghost" size="icon" onClick={() => openEditAppIdDialog(appId)}>
+                                                          <Edit className="h-4 w-4" />
+                                                      </Button>
+                                                      <Button
+                                                          variant="ghost"
+                                                          size="icon"
+                                                          onClick={() => setDeleteTarget({ type: "appId", id: appId.id })}
+                                                      >
+                                                          <Trash2 className="h-4 w-4 text-destructive" />
+                                                      </Button>
+                                                  </div>
+                                              </TableCell>
+                                          </TableRow>
+                                      ))}
+                                  </TableBody>
+                              </Table>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-xs text-muted-foreground mb-1">Plateforme</p>
-                              <Badge variant="outline" className="text-xs">
-                                {platforms.find((p) => p.id === appId.app)?.name || "Inconnu"}
-                              </Badge>
-                            </div>
-                          </div>
-                          <div className="flex justify-end gap-2 pt-2 border-t">
-                            <Button variant="ghost" size="sm" onClick={() => openEditAppIdDialog(appId)}>
-                              <Edit className="h-4 w-4 mr-1" />
-                              <span className="text-xs">Modifier</span>
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeleteTarget({ type: "appId", id: appId.id })}
-                            >
-                              <Trash2 className="h-4 w-4 mr-1 text-destructive" />
-                              <span className="text-xs">Supprimer</span>
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
+                      )}
+                  </>
               )}
-              {userAppIds.length > 0 && (
-                <div className="hidden sm:block rounded-xl border-2 overflow-hidden">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>ID de pari</TableHead>
-                        <TableHead>Plateforme</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {userAppIds.map((appId, index) => (
-                        <TableRow key={`appId-table-${appId.id}-${appId.app || 'unknown'}-${index}`}>
-                          <TableCell className="font-medium">{appId.user_app_id}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {platforms.find((p) => p.id === appId.app)?.name || "Inconnu"}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex justify-end gap-2">
-                              <Button variant="ghost" size="icon" onClick={() => openEditAppIdDialog(appId)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setDeleteTarget({ type: "appId", id: appId.id })}
-                              >
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
+
             </CardContent>
           </Card>
         </TabsContent>

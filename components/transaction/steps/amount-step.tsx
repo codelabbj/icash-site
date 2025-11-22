@@ -131,6 +131,25 @@ export function AmountStep({
         </CardContent>
       </Card>
 
+        {/* Network Message */}
+        {selectedNetwork && (() => {
+            const message = type === "deposit"
+                ? selectedNetwork.deposit_message
+                : selectedNetwork.withdrawal_message
+
+            if (!message || message.trim() === "") return null
+
+            return (
+                <Card className="overflow-hidden border-primary/20 bg-primary/5">
+                    <CardContent className="p-4 sm:p-6">
+                        <p className="text-sm sm:text-base text-foreground whitespace-pre-wrap break-words">
+                            {message}
+                        </p>
+                    </CardContent>
+                </Card>
+            )
+        })()}
+
       {/* Amount Input */}
       <Card>
         <CardHeader>

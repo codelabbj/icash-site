@@ -26,13 +26,20 @@ export function BetIdStep({ selectedPlatform, selectedBetId, onSelect, onNext }:
   const [editingBetId, setEditingBetId] = useState<UserAppId | null>(null)
   const [newBetId, setNewBetId] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
+
   // Search functionality states
   const [isSearching, setIsSearching] = useState(false)
   const [isConfirmationModalOpen, setIsConfirmationModalOpen] = useState(false)
   const [isErrorModalOpen, setIsErrorModalOpen] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
   const [pendingBetId, setPendingBetId] = useState<{ appId: string; betId: string; userName: string } | null>(null)
+
+  // Edit search functionality states
+  const [isEditSearching, setIsEditSearching] = useState(false)
+  const [isEditConfirmationModalOpen, setIsEditConfirmationModalOpen] = useState(false)
+  const [isEditErrorModalOpen, setIsEditErrorModalOpen] = useState(false)
+  const [editErrorMessage, setEditErrorMessage] = useState("")
+  const [pendingEditBetId, setPendingEditBetId] = useState<{ id: number; appId: string; betId: string; userName: string } | null>(null)
 
   useEffect(() => {
     if (selectedPlatform) {
@@ -152,25 +159,102 @@ export function BetIdStep({ selectedPlatform, selectedBetId, onSelect, onNext }:
     }
   }
 
-  const handleEditBetId = async () => {
+  const handleSearchEditBetId = async () => {
     if (!newBetId.trim() || !editingBetId || !selectedPlatform) return
-    
+      
+    setIsEditSearching(true)
+    try {
+      const searchResult = await userAppIdApi.searchUser(selectedPlatform.id, newBetId.trim())
+
+      // Validate user exists
+      if (searchResult.UserId === 0) {
+        setEditErrorMessage("Utilisateur non trouvé. Veuillez vérifier l'ID de pari.")
+        setIsEditErrorModalOpen(true)
+        setIsEditSearching(false)
+        return
+      }
+
+      // Validate currency (CurrencyId === 27 for XOF)
+      if (searchResult.CurrencyId !== 27) {
+        setEditErrorMessage("Cet utilisateur n'utilise pas la devise XOF. Veuillez vérifier votre compte.")
+        setIsEditErrorModalOpen(true)
+        setIsEditSearching(false)
+        return
+      }
+
+      // Valid user - show confirmation modal with search result
+      setPendingEditBetId({
+        id: editingBetId.id,
+        appId: selectedPlatform.id,
+        betId: newBetId.trim(),
+        userName: searchResult.Name
+      })
+      setIsEditConfirmationModalOpen(true)
+      setIsEditDialogOpen(false) // Close the edit dialog
+    } catch (error: any) {
+      // Handle API errors
+      if (error?.response?.status === 400) {
+        // Parse field-specific errors
+        const errorData = error.response.data
+        if (errorData?.error_time_message) {
+          const timeMessage = Array.isArray(errorData.error_time_message)
+            ? errorData.error_time_message[0]
+            : errorData.error_time_message
+          setEditErrorMessage(`Veuillez patienter ${timeMessage} avant de créer une nouvelle transaction`)
+        } else if (errorData?.userid) {
+          setEditErrorMessage(Array.isArray(errorData.userid) ? errorData.userid[0] : errorData.userid)
+        } else if (errorData?.app_id) {
+          setEditErrorMessage(Array.isArray(errorData.app_id) ? errorData.app_id[0] : errorData.app_id)
+        } else if (errorData?.detail) {
+          setEditErrorMessage(errorData.detail)
+        } else {
+          setEditErrorMessage("Erreur lors de la recherche. Veuillez réessayer.")
+        }
+      } else {
+        setEditErrorMessage("Erreur lors de la recherche. Veuillez réessayer.")
+      }
+      setIsEditErrorModalOpen(true)
+    } finally {
+      setIsEditSearching(false)
+    }
+  }
+
+  const handleConfirmEditBetId = async () => {
+    if (!pendingEditBetId) return
+
     setIsSubmitting(true)
     try {
       const updatedBetId = await userAppIdApi.update(
-        editingBetId.id,
-        newBetId.trim(),
-        selectedPlatform.id
+        pendingEditBetId.id,
+        pendingEditBetId.betId,
+        pendingEditBetId.appId
       )
-      setBetIds(prev => prev.map(betId => 
-        betId.id === editingBetId.id ? updatedBetId : betId
+      setBetIds(prev => prev.map(betId =>
+        betId.id === pendingEditBetId.id ? updatedBetId : betId
       ))
       setNewBetId("")
       setEditingBetId(null)
-      setIsEditDialogOpen(false)
+      setPendingEditBetId(null)
+      setIsEditConfirmationModalOpen(false)
       toast.success("ID de pari modifié avec succès")
-    } catch (error) {
-      toast.error("Erreur lors de la modification de l'ID de pari")
+    } catch (error: any) {
+      // Handle API errors
+      if (error?.response?.status === 400) {
+        const errorData = error.response.data
+        if (errorData?.error_time_message) {
+          const timeMessage = Array.isArray(errorData.error_time_message)
+            ? errorData.error_time_message[0]
+            : errorData.error_time_message
+          toast.error(`Veuillez patienter ${timeMessage} avant de créer une nouvelle transaction`)
+        } else if (errorData?.user_app_id) {
+          const errorMsg = Array.isArray(errorData.user_app_id) ? errorData.user_app_id[0] : errorData.user_app_id
+          toast.error(errorMsg)
+        } else {
+          toast.error("Erreur lors de la modification de l'ID de pari")
+        }
+      } else {
+        toast.error("Erreur lors de la modification de l'ID de pari")
+      }
     } finally {
       setIsSubmitting(false)
     }
@@ -420,7 +504,7 @@ export function BetIdStep({ selectedPlatform, selectedBetId, onSelect, onNext }:
           <DialogHeader>
             <DialogTitle>Modifier l'ID de pari</DialogTitle>
             <DialogDescription>
-              Modifiez votre ID de compte pour {selectedPlatform.name}
+              Recherchez et validez votre nouvel ID de compte pour {selectedPlatform.name}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -430,23 +514,109 @@ export function BetIdStep({ selectedPlatform, selectedBetId, onSelect, onNext }:
                 id="editBetId"
                 value={newBetId}
                 onChange={(e) => setNewBetId(e.target.value)}
-                placeholder="Entrez votre ID de pari"
+                placeholder="Entrez votre nouvel ID de pari"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !isEditSearching && !isSubmitting) {
+                    handleSearchEditBetId()
+                  }
+                }}
+                disabled={isEditSearching || isSubmitting}
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button variant="outline" onClick={() => {
+              setIsEditDialogOpen(false)
+              setNewBetId("")
+            }} disabled={isEditSearching || isSubmitting}>
               Annuler
             </Button>
-            <Button onClick={handleEditBetId} disabled={!newBetId.trim() || isSubmitting}>
+            <Button onClick={handleSearchEditBetId} disabled={!newBetId.trim() || isEditSearching || isSubmitting}>
+              {isEditSearching || isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  {isEditSearching ? "Recherche..." : "Modification..."}
+                </>
+              ) : (
+                "Rechercher"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Confirmation Modal */}
+      <Dialog open={isEditConfirmationModalOpen} onOpenChange={setIsEditConfirmationModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Confirmer la modification
+            </DialogTitle>
+            <DialogDescription>
+              Voulez-vous modifier cet ID de pari ?
+            </DialogDescription>
+          </DialogHeader>
+          {pendingEditBetId && (
+            <div className="space-y-2 py-4">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Nom:</span>
+                <span className="text-sm font-medium">{pendingEditBetId.userName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Nouvel ID de pari:</span>
+                <span className="text-sm font-medium">{pendingEditBetId.betId}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Plateforme:</span>
+                <span className="text-sm font-medium">{selectedPlatform?.name}</span>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditConfirmationModalOpen(false)
+                setPendingEditBetId(null)
+              }}
+            >
+              Annuler
+            </Button>
+            <Button onClick={handleConfirmEditBetId} disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Modification...
                 </>
               ) : (
-                "Modifier"
+                "Confirmer"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Error Modal */}
+      <Dialog open={isEditErrorModalOpen} onOpenChange={setIsEditErrorModalOpen}>
+        <DialogContent className="sm:max-w-md bg-white dark:bg-gray-900">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-600" />
+              Erreur
+            </DialogTitle>
+            <DialogDescription>
+              {editErrorMessage || "Une erreur est survenue"}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setIsEditErrorModalOpen(false)
+                setEditErrorMessage("")
+              }}
+            >
+              Fermer
             </Button>
           </DialogFooter>
         </DialogContent>

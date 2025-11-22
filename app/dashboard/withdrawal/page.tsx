@@ -115,7 +115,10 @@ export default function WithdrawalPage() {
         return (
           <PlatformStep
             selectedPlatform={selectedPlatform}
-            onSelect={setSelectedPlatform}
+            onSelect={(platform) => {
+                setSelectedPlatform(platform)
+                setTimeout(()=>{setCurrentStep(currentStep + 1)}, 1000)
+            }}
             onNext={handleNext}
           />
         )
@@ -124,7 +127,10 @@ export default function WithdrawalPage() {
           <BetIdStep
             selectedPlatform={selectedPlatform}
             selectedBetId={selectedBetId}
-            onSelect={setSelectedBetId}
+            onSelect={(betId)=>{
+                setSelectedBetId(betId)
+                setTimeout(()=>{setCurrentStep(currentStep + 1)}, 1000)
+            }}
             onNext={handleNext}
           />
         )
@@ -132,7 +138,10 @@ export default function WithdrawalPage() {
         return (
           <NetworkStep
             selectedNetwork={selectedNetwork}
-            onSelect={setSelectedNetwork}
+            onSelect={(network)=>{
+                setSelectedNetwork(network)
+                setTimeout(()=>{setCurrentStep(currentStep + 1)}, 1000)
+            }}
             type="withdrawal"
           />
         )
@@ -141,7 +150,10 @@ export default function WithdrawalPage() {
           <PhoneStep
             selectedNetwork={selectedNetwork}
             selectedPhone={selectedPhone}
-            onSelect={setSelectedPhone}
+            onSelect={(phone) => {
+                setSelectedPhone(phone)
+                setTimeout(()=>{setCurrentStep(currentStep + 1)}, 1000)
+            }}
             onNext={handleNext}
           />
         )
