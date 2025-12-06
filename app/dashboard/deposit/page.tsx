@@ -45,6 +45,8 @@ export default function DepositPage() {
 
     const [isMoovUSSDDialogOpen, setIsMoovUSSDDialogOpen] = useState(false)
     const [moovUSSDCode, setMoovUSSDCode] = useState<string>("")
+    const [isOrangeUSSDDialogOpen, setIsOrangeUSSDDialogOpen] = useState(false)
+    const [orangeUSSDCode, setOrangeUSSDCode] = useState<string>("")
     const [copiedUSSD, setCopiedUSSD] = useState(false)
   // Confirmation dialog
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
@@ -103,11 +105,21 @@ export default function DepositPage() {
           const isMoov = selectedNetwork?.name?.toLowerCase() === "moov"
           const isMoovConnected = selectedNetwork?.deposit_api === "connect" && isMoov
 
+          // Check if Orange network and API is connected
+          const isOrange = selectedNetwork?.name?.toLowerCase() === "orange"
+          const isOrangeConnected = selectedNetwork?.deposit_api === "connect" && isOrange
+
           if (isMoovConnected && settings) {
+              // Determine phone number based on country code
+              const isBfCountry = selectedNetwork?.country_code?.toLowerCase() === "bf"
+              const marchandPhone = isBfCountry && settings.bf_moov_marchand_phone
+                  ? settings.bf_moov_marchand_phone
+                  : settings.moov_marchand_phone
+
               // Generate USSD code: 155*2*1*settings.moov_marchand_phone*amount-1% of amount#
               const fee = Math.ceil(amount * 0.01) // 1% fee
               const netAmount = amount - fee
-              const ussdCode = `155*2*1*${settings.moov_marchand_phone}*${netAmount}#`
+              const ussdCode = `155*2*1*${marchandPhone}*${netAmount}#`
 
               // Always show the USSD dialog
               setIsMoovUSSDDialogOpen(true)
@@ -118,6 +130,31 @@ export default function DepositPage() {
                   window.location.href = `tel:${ussdCode}`
               }, 500)
 
+          } else if (isOrangeConnected && settings) {
+              // For Orange, check payment_by_link - if false, use USSD
+              if (selectedNetwork?.payment_by_link === false) {
+                  // Determine phone number based on country code
+                  const isBfCountry = selectedNetwork?.country_code?.toLowerCase() === "bf"
+                  const marchandPhone = isBfCountry && settings.bf_orange_marchand_phone
+                      ? settings.bf_orange_marchand_phone
+                      : settings.orange_marchand_phone
+
+                  // Generate USSD code: *144*2*1*settings.orange_marchand_phone*montant#
+                  const ussdCode = `*144*2*1*${marchandPhone}*${amount}#`
+
+                  // Show the Orange USSD dialog
+                  setIsOrangeUSSDDialogOpen(true)
+                  setOrangeUSSDCode(ussdCode)
+                  setIsConfirmationOpen(false)
+
+                  setTimeout(() => {
+                      window.location.href = `tel:${ussdCode}`
+                  }, 500)
+              } else {
+                  // If payment_by_link is true, show success (transaction link should have been handled above)
+                  toast.success("Dépôt initié avec succès!")
+                  router.push("/dashboard")
+              }
           } else {
               toast.success("Dépôt initié avec succès!")
               router.push("/dashboard")
@@ -363,6 +400,75 @@ export default function DepositPage() {
                           type="button"
                           onClick={() => {
                               setIsMoovUSSDDialogOpen(false)
+                              toast.success("Dépôt initié avec succès!")
+                              router.push("/dashboard")
+                          }}
+                          className="w-full sm:w-auto"
+                      >
+                          Confirmer
+                      </Button>
+                  </DialogFooter>
+              </DialogContent>
+          </Dialog>
+
+          {/* Orange USSD Code Dialog */}
+          <Dialog open={isOrangeUSSDDialogOpen} onOpenChange={setIsOrangeUSSDDialogOpen}>
+              <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2 text-xl">
+                          <CircleCheck className="h-5 w-5 text-primary" />
+                          Code USSD Orange
+                      </DialogTitle>
+                      <DialogDescription className="text-base pt-2">
+                          Vous êtes sur un ordinateur? Veuillez copier ce code et le saisir sur votre téléphone mobile.
+                      </DialogDescription>
+                  </DialogHeader>
+
+                  <div className="space-y-4">
+                      <div className="relative">
+                          <div className="bg-muted/50 p-4 rounded-lg border-2 border-primary/30">
+                              <code className="text-sm font-mono text-center break-all text-foreground">
+                                  {orangeUSSDCode}
+                              </code>
+                          </div>
+                          <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                  navigator.clipboard.writeText(orangeUSSDCode)
+                                  setCopiedUSSD(true)
+                                  setTimeout(() => setCopiedUSSD(false), 2000)
+                                  toast.success("Code copié!")
+                              }}
+                              className="absolute right-2 top-2 gap-2"
+                          >
+                              {copiedUSSD ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                          </Button>
+                      </div>
+                      <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
+                          <p className="text-sm text-foreground">
+                              <span className="font-semibold">Instructions:</span> Copiez le code ci-dessus, puis tapez-le sur votre téléphone mobile pour effectuer la transaction.
+                          </p>
+                      </div>
+                  </div>
+
+                  <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-3">
+                      <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                              setIsOrangeUSSDDialogOpen(false)
+                              router.push("/dashboard")
+                          }}
+                          className="w-full sm:w-auto"
+                      >
+                          Fermer
+                      </Button>
+                      <Button
+                          type="button"
+                          onClick={() => {
+                              setIsOrangeUSSDDialogOpen(false)
                               toast.success("Dépôt initié avec succès!")
                               router.push("/dashboard")
                           }}
