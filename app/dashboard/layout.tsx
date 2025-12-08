@@ -17,6 +17,7 @@ import {
 import { LogOut, User, Loader2, Bell, Ticket } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { MobileAppDownload } from "@/components/mobile-app-download"
+import { FloatingSocialButton } from "@/components/floating-social-button"
 import Image from "next/image";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -137,7 +138,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <p className="text-sm text-muted-foreground">
                         Développé par{" "}
                         <Link
-                            href="https://wa.me/22947030588"
+                            href="https://codelab.bj/"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-semibold text-primary hover:underline transition-all duration-300"
@@ -147,7 +148,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     </p>
                 </div>
             </div>
-        </footer>
+          </footer>
+
+          {/* Floating Social Button */}
+          <FloatingSocialButton />
     </div>
   )
 }
