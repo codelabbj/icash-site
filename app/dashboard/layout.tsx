@@ -60,9 +60,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex flex-col min-h-screen bg-background relative overflow-hidden">
       {/* Animated background gradient orbs */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 -left-4 w-96 h-96 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 -right-4 w-96 h-96 bg-[#059669]/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#2563eb]/20 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        <div className="absolute top-0 -left-4 w-96 h-96 bg-[#4f270f]/15 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 -right-4 w-96 h-96 bg-[#28150c]/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#5f402f]/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
       </div>
 
       {/* Header */}

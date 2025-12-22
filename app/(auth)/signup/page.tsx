@@ -108,12 +108,12 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen w-full flex flex-col lg:flex-row overflow-x-hidden">
       {/* Left Side - Visual Design */}
-        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-primary via-accent to-primary/50">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-transparent to-accent/20"></div>
+        <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-gradient-to-br from-[#4f270f] via-[#28150c] to-[#5f402f]">
+            <div className="absolute inset-0 bg-gradient-to-br from-[#4f270f]/30 via-transparent to-[#28150c]/30"></div>
 
             {/* Animated background elements */}
-            <div className="absolute top-20 left-20 w-72 h-72 bg-primary/20 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-20 right-20 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+            <div className="absolute top-20 left-20 w-72 h-72 bg-[#41281a]/25 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-20 right-20 w-96 h-96 bg-[#5c341d]/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
         
         <div className="relative z-10 flex flex-col justify-center items-center text-white p-8 xl:p-12 w-full">
           <div className="mb-6 xl:mb-8">
@@ -146,7 +146,7 @@ export default function SignupPage() {
       </div>
 
       {/* Right Side - Form */}
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-6 xl:p-8 bg-gradient-to-br from-background via-background to-primary/5 min-h-screen lg:min-h-0 w-full">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-6 xl:p-8 bg-gradient-to-br from-background via-background to-[#4f270f]/5 min-h-screen lg:min-h-0 w-full">
         <div className="w-full max-w-md lg:max-w-lg xl:max-w-xl 2xl:max-w-2xl">
           <div className="mb-6 sm:mb-8 text-center lg:text-left">
             <div className="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 rounded-xl bg-gradient-to-br from-primary to-accent mb-3 sm:mb-4 lg:hidden">
