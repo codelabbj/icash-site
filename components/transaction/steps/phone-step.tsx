@@ -37,6 +37,30 @@ export function PhoneStep({ selectedNetwork, selectedPhone, onSelect }: PhoneSte
     const [selectedCountry, setSelectedCountry] = useState<string>("225")
     const [selectedEditCountry, setSelectedEditCountry] = useState<string>("225")
 
+  // Helper function to extract validation error messages from API response
+  const getErrorMessage = (error: any): string => {
+    // Check if error has response data with field-specific errors
+    if (error?.response?.data && typeof error.response.data === 'object') {
+      const errorData = error.response.data
+
+      // Check for phone field errors
+      if (errorData.phone && Array.isArray(errorData.phone) && errorData.phone.length > 0) {
+        return errorData.phone[0] // Return the first error message for phone field
+      }
+
+      // Check for other common field errors
+      const errorFields = ['phone', 'network', 'user']
+      for (const field of errorFields) {
+        if (errorData[field] && Array.isArray(errorData[field]) && errorData[field].length > 0) {
+          return errorData[field][0]
+        }
+      }
+    }
+
+    // Fallback to generic error message
+    return "Une erreur inattendue s'est produite"
+  }
+
   useEffect(() => {
     if (selectedNetwork) {
       fetchPhones()
@@ -86,7 +110,7 @@ export function PhoneStep({ selectedNetwork, selectedPhone, onSelect }: PhoneSte
           setIsAddDialogOpen(false)
           toast.success("Numéro de téléphone ajouté avec succès")
       } catch (error) {
-          toast.error("Erreur lors de l'ajout du numéro de téléphone")
+          toast.error(getErrorMessage(error))
       } finally {
           setIsSubmitting(false)
       }
@@ -126,7 +150,7 @@ export function PhoneStep({ selectedNetwork, selectedPhone, onSelect }: PhoneSte
           setIsEditDialogOpen(false)
           toast.success("Numéro de téléphone modifié avec succès")
       } catch (error) {
-          toast.error("Erreur lors de la modification du numéro de téléphone")
+          toast.error(getErrorMessage(error))
       } finally {
           setIsSubmitting(false)
       }
@@ -149,7 +173,11 @@ export function PhoneStep({ selectedNetwork, selectedPhone, onSelect }: PhoneSte
 
   const openEditDialog = (phone: UserPhone) => {
     setEditingPhone(phone)
-    setNewPhone(phone.phone)
+    // Extract country code (first 3 characters) and phone number (remaining characters)
+    const countryCode = phone.phone.slice(0, 3)
+    const phoneNumber = phone.phone.slice(3)
+    setSelectedEditCountry(countryCode)
+    setNewPhone(phoneNumber)
     setIsEditDialogOpen(true)
   }
 
