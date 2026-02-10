@@ -28,7 +28,7 @@ export function MobileAppDownload({
         href="https://zefast-mobile-app.vercel.app/releases/app-v1.0.2.apk"
         target="_blank"
         rel="noopener noreferrer"
-        className="flex items-center gap-2"
+        className="flex items-center gap-2 w-full justify-center"
       >
         <Smartphone className="h-4 w-4" />
         {showText && (

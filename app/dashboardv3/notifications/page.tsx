@@ -14,7 +14,6 @@ import { fcmService } from '@/lib/firebase';
 import type { MessagePayload } from 'firebase/messaging';
 import { useTheme } from 'next-themes';
 import Image from 'next/image';
-import Link from 'next/link';
 import icashLogo from '@/public/icash-logo.png';
 
 // Extended notification type to include FCM notifications
@@ -293,7 +292,7 @@ export default function NotificationsPage() {
 
       {/* Zone centrale */}
       <div className="flex-1 flex items-start justify-center p-4 sm:p-6 relative z-10 overflow-y-auto">
-        <div className="w-full max-w-[420px] flex flex-col pt-4 sm:pt-6">
+        <div className="w-full max-w-[420px] mx-auto flex flex-col pt-4 sm:pt-6">
           {/* Header avec logo et icônes */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -353,81 +352,118 @@ export default function NotificationsPage() {
 
           {/* Notifications List */}
           {isLoading ? (
-            <Card className="border border-border/50 bg-card/60 backdrop-blur-md shadow-lg">
-              <CardContent className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </CardContent>
-            </Card>
-          ) : allNotifications.length === 0 ? (
-            <Card className="border border-border/50 bg-card/60 backdrop-blur-md shadow-lg">
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <div className="p-3 rounded-xl bg-muted/30 mb-3">
-                  <Bell className="h-8 w-8 text-muted-foreground" />
+            <div className="flex items-center justify-center py-16">
+              <div className="flex flex-col items-center gap-3">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl"></div>
+                  <Loader2 className="h-10 w-10 animate-spin text-primary relative z-10" />
                 </div>
-                <p className="text-sm font-semibold text-muted-foreground text-center mb-1">Aucune notification</p>
-                <p className="text-xs text-muted-foreground text-center">Vos notifications apparaîtront ici</p>
-              </CardContent>
-            </Card>
+                <p className="text-sm text-muted-foreground">Chargement des notifications...</p>
+              </div>
+            </div>
+          ) : allNotifications.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-secondary/30 rounded-full blur-2xl"></div>
+                <div className="relative bg-gradient-to-br from-primary/20 to-secondary/20 p-6 rounded-full border-2 border-primary/30">
+                  <Bell className="h-12 w-12 text-primary" />
+                </div>
+              </div>
+              <h3 className="text-lg font-bold text-foreground mb-2">Aucune notification</h3>
+              <p className="text-sm text-muted-foreground text-center max-w-[280px]">
+                Vous n'avez pas encore de notifications. Elles apparaîtront ici lorsqu'elles arriveront.
+              </p>
+            </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {allNotifications.map((notification) => {
                 const isFCM = 'is_fcm' in notification && notification.is_fcm;
                 
                 return (
-                  <Card
+                  <div
                     key={notification.id}
-                    className={`border border-border/50 bg-card/60 backdrop-blur-md shadow-lg hover:shadow-xl transition-all ${
-                      !notification.is_read ? 'border-primary/50' : ''
-                    } ${isFCM ? 'border-blue-500/30' : ''}`}
+                    className={`relative overflow-hidden rounded-2xl border-2 transition-all duration-300 hover:scale-[1.02] ${
+                      !notification.is_read 
+                        ? 'border-primary/60 bg-gradient-to-br from-primary/20 via-card/60 to-card/60 shadow-lg shadow-primary/10' 
+                        : 'border-border/30 bg-card/40 backdrop-blur-md'
+                    } ${isFCM ? 'border-blue-500/40 bg-gradient-to-br from-blue-500/10 via-card/60 to-card/60' : ''}`}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex-1 min-w-0 space-y-2">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {isFCM && (
-                              <MessageSquare className="h-4 w-4 text-blue-500 shrink-0" />
-                            )}
-                            <h3 className="font-semibold text-sm text-foreground">
-                              {notification.title}
-                            </h3>
+                    {/* Gradient overlay for unread */}
+                    {!notification.is_read && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-transparent pointer-events-none"></div>
+                    )}
+                    
+                    <div className="relative p-4">
+                      <div className="flex items-start gap-3">
+                        {/* Icon container */}
+                        <div className={`shrink-0 p-2.5 rounded-xl ${
+                          !notification.is_read 
+                            ? 'bg-primary/20 border-2 border-primary/30' 
+                            : 'bg-muted/30 border border-border/30'
+                        }`}>
+                          {isFCM ? (
+                            <MessageSquare className={`h-5 w-5 ${!notification.is_read ? 'text-primary' : 'text-blue-500'}`} />
+                          ) : (
+                            <Bell className={`h-5 w-5 ${!notification.is_read ? 'text-primary' : 'text-muted-foreground'}`} />
+                          )}
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <h3 className={`font-bold text-sm ${
+                                  !notification.is_read ? 'text-foreground' : 'text-muted-foreground'
+                                }`}>
+                                  {notification.title}
+                                </h3>
+                                {!notification.is_read && (
+                                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+                                {notification.content}
+                              </p>
+                            </div>
+                            
                             {!notification.is_read && (
-                              <span className="h-2 w-2 rounded-full bg-primary shrink-0" />
-                            )}
-                            {isFCM && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
-                                Push
-                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => markAsRead(notification.id)}
+                                className="h-7 w-7 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 shrink-0"
+                              >
+                                <Check className="h-3.5 w-3.5 text-primary" />
+                              </Button>
                             )}
                           </div>
                           
-                          <p className="text-xs text-muted-foreground">
-                            {notification.content}
-                          </p>
-                          
-                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                            <span>{formatDate(notification.created_at)}</span>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] text-muted-foreground">
+                              {formatDate(notification.created_at)}
+                            </span>
+                            {isFCM && (
+                              <>
+                                <span className="text-[10px] text-muted-foreground">•</span>
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 bg-blue-500/10 border-blue-500/30 text-blue-600 dark:text-blue-400">
+                                  Push
+                                </Badge>
+                              </>
+                            )}
                             {'reference' in notification && notification.reference && (
                               <>
-                                <span>•</span>
-                                <span>Ref: {notification.reference.slice(0, 20)}...</span>
+                                <span className="text-[10px] text-muted-foreground">•</span>
+                                <span className="text-[10px] text-muted-foreground font-mono">
+                                  {notification.reference.slice(0, 12)}...
+                                </span>
                               </>
                             )}
                           </div>
                         </div>
-                        
-                        {!notification.is_read && (
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => markAsRead(notification.id)}
-                            className="h-8 w-8 rounded-lg bg-card/60 backdrop-blur-md hover:bg-card/80 border border-border/50 shrink-0"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                        )}
                       </div>
-                    </CardContent>
-                  </Card>
+                    </div>
+                  </div>
                 );
               })}
             </div>

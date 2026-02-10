@@ -1,12 +1,10 @@
 import {Transaction} from "@/lib/types";
-import {Card, CardContent} from "@/components/ui/card";
 import {ArrowDownToLine, ArrowUpFromLine, Check, Copy} from "lucide-react";
 import {Button} from "@/components/ui/button";
 import {format} from "date-fns";
 import {fr} from "date-fns/locale";
 import {toast} from "react-hot-toast";
 import {useState} from "react";
-import {Badge} from "@/components/ui/badge";
 
 interface Props {
     transaction: Transaction
@@ -26,98 +24,120 @@ export const TransactionCard = ({transaction} : Props) =>{
         }
     }
 
-    const getStatusBadge = (status: Transaction["status"]) => {
-        const statusConfig: Record<string, { variant:"pending" |"default" | "secondary" | "destructive" | "outline"; label: string }> = {
-            pending: { variant: "pending", label: "En attente" },
-            accept: { variant: "default", label: "Accepté" },
-            init_payment: { variant: "pending", label: "En attente" },
-            error: { variant: "destructive", label: "Erreur" },
-            reject: { variant: "destructive", label: "Rejeté" },
-            timeout: { variant: "outline", label: "Expiré" },
+    const getStatusColor = (status: Transaction["status"]) => {
+        const statusColors: Record<string, { bg: string; text: string; border: string }> = {
+            pending: { bg: "bg-yellow-500/20", text: "text-yellow-600 dark:text-yellow-500", border: "border-yellow-500/30" },
+            accept: { bg: "bg-green-500/20", text: "text-green-600 dark:text-green-500", border: "border-green-500/30" },
+            init_payment: { bg: "bg-yellow-500/20", text: "text-yellow-600 dark:text-yellow-500", border: "border-yellow-500/30" },
+            error: { bg: "bg-red-500/20", text: "text-red-600 dark:text-red-500", border: "border-red-500/30" },
+            reject: { bg: "bg-red-500/20", text: "text-red-600 dark:text-red-500", border: "border-red-500/30" },
+            timeout: { bg: "bg-gray-500/20", text: "text-gray-600 dark:text-gray-500", border: "border-gray-500/30" },
         }
-
-        const config = statusConfig[status] || { variant: "outline" as const, label: status }
-        return <Badge variant={config.variant}>{config.label}</Badge>
+        return statusColors[status] || { bg: "bg-gray-500/20", text: "text-gray-600 dark:text-gray-500", border: "border-gray-500/30" }
     }
 
-    const getTypeBadge = (type: Transaction["type_trans"]) => {
-        return (
-            <Badge variant={type === "deposit" ? "default" : "secondary"}>
-                {type === "deposit" ? "Dépôt" : "Retrait"}
-            </Badge>
-        )
+    const getStatusLabel = (status: Transaction["status"]) => {
+        const labels: Record<string, string> = {
+            pending: "En attente",
+            accept: "Accepté",
+            init_payment: "En attente",
+            error: "Erreur",
+            reject: "Rejeté",
+            timeout: "Expiré",
+        }
+        return labels[status] || status
     }
+
+    const statusStyle = getStatusColor(transaction.status)
+    const isDeposit = transaction.type_trans === "deposit"
 
     return (
-        <Card key={transaction.id} className="group hover:shadow-xl hover:scale-[1.01] transition-all duration-300 border-2 border-transparent hover:border-primary/20 bg-gradient-to-r from-card via-card to-transparent hover:via-primary/5">
-            <CardContent className="p-3 sm:p-4 lg:p-5">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-                    <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0 w-full">
-                        <div className={`p-2 sm:p-3 rounded-xl shrink-0 ${
-                            transaction.type_trans === "deposit"
-                                ? "bg-gradient-to-br from-deposit/20 to-deposit/10 text-deposit ring-2 ring-deposit/10"
-                                : "bg-gradient-to-br from-withdrawal/20 to-withdrawal/10 text-withdrawal ring-2 ring-withdrawal/10"
+        <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-card/70 via-card/60 to-card/50 backdrop-blur-md border border-border/40 shadow-sm hover:shadow-md hover:border-border/60 transition-all duration-300">
+            <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                isDeposit 
+                    ? "bg-gradient-to-r from-green-500/5 via-transparent to-transparent" 
+                    : "bg-gradient-to-r from-orange-500/5 via-transparent to-transparent"
+            }`}></div>
+            
+            <div className="relative z-10 p-2.5">
+                <div className="flex items-center justify-between gap-2">
+                    {/* Left side - Icon and main info */}
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                        <div className={`p-1.5 rounded-lg shrink-0 ${
+                            isDeposit
+                                ? "bg-gradient-to-br from-green-500/20 to-green-500/10 border border-green-500/30"
+                                : "bg-gradient-to-br from-orange-500/20 to-orange-500/10 border border-orange-500/30"
                         }`}>
-                            {transaction.type_trans === "deposit" ? (
-                                <ArrowDownToLine className="h-4 w-4 sm:h-5 sm:w-5" />
+                            {isDeposit ? (
+                                <ArrowDownToLine className={`h-3.5 w-3.5 ${isDeposit ? "text-green-600 dark:text-green-500" : "text-orange-600 dark:text-orange-500"}`} />
                             ) : (
-                                <ArrowUpFromLine className="h-4 w-4 sm:h-5 sm:w-5" />
+                                <ArrowUpFromLine className="h-3.5 w-3.5 text-orange-600 dark:text-orange-500" />
                             )}
                         </div>
+                        
                         <div className="flex-1 min-w-0">
-                            <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-2 mb-1 sm:mb-1.5">
-                                <div className="flex items-center gap-1.5 sm:gap-2">
-                                    <h3 className="font-bold text-sm sm:text-base text-foreground">#{transaction.reference}</h3>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-5 w-5 sm:h-6 sm:w-6 rounded-md hover:bg-muted"
-                                        onClick={(e) => {
-                                            e.preventDefault()
-                                            e.stopPropagation()
-                                            copyReference(transaction.reference)
-                                        }}
-                                        title="Copier la référence"
-                                    >
-                                        {copiedReference === transaction.reference ? (
-                                            <Check className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-green-600" />
-                                        ) : (
-                                            <Copy className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground hover:text-foreground" />
-                                        )}
-                                    </Button>
-                                </div>
-                                <div className="flex items-center gap-1.5 sm:gap-2">
-                                    {getTypeBadge(transaction.type_trans)}
-                                    {getStatusBadge(transaction.status)}
-                                </div>
-
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                                <h3 className="font-semibold text-xs text-foreground truncate">#{transaction.reference}</h3>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-5 w-5 rounded-md hover:bg-muted/50 p-0"
+                                    onClick={(e) => {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        copyReference(transaction.reference)
+                                    }}
+                                    title="Copier la référence"
+                                >
+                                    {copiedReference === transaction.reference ? (
+                                        <Check className="h-3 w-3 text-green-600" />
+                                    ) : (
+                                        <Copy className="h-3 w-3 text-muted-foreground hover:text-foreground" />
+                                    )}
+                                </Button>
                             </div>
-                            <div className="flex flex-row items-start sm:items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground">
-                                <span className="font-medium">{transaction.app_details.name}</span>
-                                <span>•</span>
-                                <span className="truncate">+{transaction.phone_number.slice(0,3)} {transaction.phone_number.slice(3)}</span>
+                            
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${
+                                    isDeposit 
+                                        ? "bg-green-500/20 text-green-600 dark:text-green-500 border-green-500/30" 
+                                        : "bg-orange-500/20 text-orange-600 dark:text-orange-500 border-orange-500/30"
+                                }`}>
+                                    {isDeposit ? "Dépôt" : "Retrait"}
+                                </span>
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${statusStyle.bg} ${statusStyle.text} ${statusStyle.border}`}>
+                                    {getStatusLabel(transaction.status)}
+                                </span>
+                            </div>
+                            
+                            <div className="flex items-center gap-1 mt-0.5">
+                                <span className="text-[10px] text-muted-foreground truncate">{transaction.app_details.name}</span>
+                                <span className="text-[10px] text-muted-foreground">•</span>
+                                <span className="text-[10px] text-muted-foreground truncate">+{transaction.phone_number.slice(0,3)} {transaction.phone_number.slice(3)}</span>
                             </div>
                         </div>
                     </div>
-                    <div className="text-left sm:text-right shrink-0 w-full sm:w-auto border-t sm:border-t-0 pt-2 sm:pt-0 flex sm:flex-col items-start sm:items-end justify-between sm:justify-start gap-1 sm:gap-1">
-                        <p className={`text-base sm:text-lg font-bold ${
-                            transaction.type_trans === "deposit" ? "text-deposit" : "text-withdrawal"
+                    
+                    {/* Right side - Amount and date */}
+                    <div className="flex flex-col items-end gap-0.5 shrink-0">
+                        <p className={`text-sm font-bold ${
+                            isDeposit ? "text-green-600 dark:text-green-500" : "text-orange-600 dark:text-orange-500"
                         }`}>
-                            {transaction.type_trans === "deposit" ? "+" : "-"}
+                            {isDeposit ? "+" : "-"}
                             {transaction.amount.toLocaleString("fr-FR", {
                                 style: "currency",
                                 currency: "XOF",
                                 minimumFractionDigits: 0,
                             })}
                         </p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">
+                        <p className="text-[10px] text-muted-foreground">
                             {format(new Date(transaction.created_at), "dd MMM à HH:mm", {
                                 locale: fr,
                             })}
                         </p>
                     </div>
                 </div>
-            </CardContent>
-        </Card>
+            </div>
+        </div>
     )
 }

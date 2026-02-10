@@ -1,12 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Loader2, Plus, Edit, Trash2 } from "lucide-react"
+import { Loader2, Plus, Edit, Trash2, CheckCircle } from "lucide-react"
 import { phoneApi } from "@/lib/api-client"
 import type { UserPhone, Network } from "@/lib/types"
 import { toast } from "react-hot-toast"
@@ -183,111 +182,126 @@ export function PhoneStep({ selectedNetwork, selectedPhone, onSelect }: PhoneSte
 
   if (!selectedNetwork) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">Veuillez d'abord sélectionner un réseau</p>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-8">
+        <p className="text-sm text-muted-foreground">Veuillez d'abord sélectionner un réseau</p>
+      </div>
     )
   }
 
   return (
     <>
-      <Card>
-        <CardHeader>
-          <CardTitle>Choisir un numéro de téléphone</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin" />
+      <div className="space-y-3">
+        <h3 className="text-sm font-semibold text-muted-foreground mb-3 px-1">Choisir un numéro de téléphone</h3>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl"></div>
+              <Loader2 className="h-6 w-6 animate-spin text-primary relative z-10" />
             </div>
-          ) : (
-            <div className="space-y-4">
-              {phones.map((phone) => (
-                <Card
-                  key={phone.id}
-                  className={`cursor-pointer transition-all hover:shadow-lg ${
-                    selectedPhone?.id === phone.id
-                      ? "ring-2 ring-primary bg-primary/10"
-                      : "hover:bg-muted/50"
-                  }`}
-                  onClick={() => onSelect(phone)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold">+{phone.phone.slice(0,3)} {phone.phone.slice(3)}</h3>
-                        <p className="text-sm text-muted-foreground">
-                          Ajouté le {new Date(phone.created_at).toLocaleDateString("fr-FR")}
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openEditDialog(phone)
-                          }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            handleDeletePhone(phone)
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {phones.map((phone) => (
+              <div
+                key={phone.id}
+                className={`relative overflow-hidden rounded-xl border transition-all duration-200 cursor-pointer group ${
+                  selectedPhone?.id === phone.id
+                    ? "border-primary/60 bg-gradient-to-br from-primary/20 via-primary/10 to-transparent shadow-lg shadow-primary/10 scale-[0.98]"
+                    : "border-border/40 bg-gradient-to-br from-card/50 to-card/30 hover:border-border/60 hover:shadow-md"
+                }`}
+                onClick={() => onSelect(phone)}
+              >
+                {/* Selected indicator */}
+                {selectedPhone?.id === phone.id && (
+                  <div className="absolute top-2 right-2 z-10">
+                    <div className="p-1.5 rounded-full bg-primary border border-primary/30">
+                      <CheckCircle className="h-3 w-3 text-white" />
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-              
-              {phones.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground mb-4">Aucun numéro de téléphone trouvé</p>
-                  <Button onClick={() => setIsAddDialogOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Ajouter un numéro
-                  </Button>
+                  </div>
+                )}
+                
+                <div className="p-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className={`font-bold text-sm truncate ${
+                        selectedPhone?.id === phone.id ? "text-foreground" : "text-foreground/90"
+                      }`}>
+                        +{phone.phone.slice(0,3)} {phone.phone.slice(3)}
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Ajouté le {new Date(phone.created_at).toLocaleDateString("fr-FR")}
+                      </p>
+                    </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openEditDialog(phone)
+                        }}
+                        className="h-7 w-7 p-0 rounded-lg bg-card/60 backdrop-blur-sm border border-border/40 hover:bg-card/80"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDeletePhone(phone)
+                        }}
+                        className="h-7 w-7 p-0 rounded-lg bg-card/60 backdrop-blur-sm border border-border/40 hover:bg-card/80 hover:text-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              )}
-              
-              {phones.length > 0 && (
+              </div>
+            ))}
+            
+            {phones.length === 0 && (
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground mb-3">Aucun numéro de téléphone trouvé</p>
                 <Button 
-                  variant="outline" 
                   onClick={() => setIsAddDialogOpen(true)}
-                  className="w-full"
+                  className="h-9 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg"
                 >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Ajouter un autre numéro
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                  <span className="text-xs">Ajouter un numéro</span>
                 </Button>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            )}
+            
+            {phones.length > 0 && (
+              <Button 
+                variant="outline" 
+                onClick={() => setIsAddDialogOpen(true)}
+                className="w-full h-9 border-border/40"
+              >
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                <span className="text-xs">Ajouter un autre numéro</span>
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Add Phone Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ajouter un numéro de téléphone</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="border border-border/40 bg-gradient-to-br from-card/95 via-card/90 to-card/85 backdrop-blur-xl shadow-2xl rounded-2xl">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="text-base font-bold">Ajouter un numéro de téléphone</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
               Entrez votre numéro {selectedNetwork.public_name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3">
               <div>
-                  <Label htmlFor="country">Pays</Label>
+                  <Label htmlFor="country" className="text-xs">Pays</Label>
                   <Select value={selectedCountry} onValueChange={setSelectedCountry}>
-                      <SelectTrigger id="country">
+                      <SelectTrigger id="country" className="h-8 text-xs">
                           <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -300,31 +314,40 @@ export function PhoneStep({ selectedNetwork, selectedPhone, onSelect }: PhoneSte
                   </Select>
               </div>
             <div>
-              <Label htmlFor="phone">Numéro de téléphone</Label>
+              <Label htmlFor="phone" className="text-xs">Numéro de téléphone</Label>
               <Input
                 id="phone"
                 value={newPhone}
                 onChange={(e) => setNewPhone(e.target.value)}
                 placeholder="Ex: 0712345678"
                 maxLength={10}
+                className="h-8 text-xs"
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[10px] text-muted-foreground mt-1">
                 Maximum 10 chiffres (sans le code pays)
               </p>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+          <DialogFooter className="pt-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsAddDialogOpen(false)}
+              className="h-9 border-border/40"
+            >
               Annuler
             </Button>
-            <Button onClick={handleAddPhone} disabled={!newPhone.trim() || isSubmitting}>
+            <Button 
+              onClick={handleAddPhone} 
+              disabled={!newPhone.trim() || isSubmitting}
+              className="h-9 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg"
+            >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Ajout...
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  <span className="text-xs">Ajout...</span>
                 </>
               ) : (
-                "Ajouter"
+                <span className="text-xs">Ajouter</span>
               )}
             </Button>
           </DialogFooter>
@@ -333,18 +356,18 @@ export function PhoneStep({ selectedNetwork, selectedPhone, onSelect }: PhoneSte
 
       {/* Edit Phone Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Modifier le numéro de téléphone</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="border border-border/40 bg-gradient-to-br from-card/95 via-card/90 to-card/85 backdrop-blur-xl shadow-2xl rounded-2xl">
+          <DialogHeader className="pb-3">
+            <DialogTitle className="text-base font-bold">Modifier le numéro de téléphone</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
               Modifiez votre numéro {selectedNetwork.public_name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-3">
               <div>
-                  <Label htmlFor="editCountry">Pays</Label>
+                  <Label htmlFor="editCountry" className="text-xs">Pays</Label>
                   <Select value={selectedEditCountry} onValueChange={setSelectedEditCountry}>
-                      <SelectTrigger id="editCountry">
+                      <SelectTrigger id="editCountry" className="h-8 text-xs">
                           <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -357,31 +380,40 @@ export function PhoneStep({ selectedNetwork, selectedPhone, onSelect }: PhoneSte
                   </Select>
               </div>
             <div>
-              <Label htmlFor="editPhone">Numéro de téléphone</Label>
+              <Label htmlFor="editPhone" className="text-xs">Numéro de téléphone</Label>
               <Input
                 id="editPhone"
                 value={newPhone}
                 onChange={(e) => setNewPhone(e.target.value)}
                 placeholder="Ex: 0712345678"
                 maxLength={10}
+                className="h-8 text-xs"
               />
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[10px] text-muted-foreground mt-1">
                 Maximum 10 chiffres (sans le code pays)
               </p>
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+          <DialogFooter className="pt-3">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsEditDialogOpen(false)}
+              className="h-9 border-border/40"
+            >
               Annuler
             </Button>
-            <Button onClick={handleEditPhone} disabled={!newPhone.trim() || isSubmitting}>
+            <Button 
+              onClick={handleEditPhone} 
+              disabled={!newPhone.trim() || isSubmitting}
+              className="h-9 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg"
+            >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Modification...
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  <span className="text-xs">Modification...</span>
                 </>
               ) : (
-                "Modifier"
+                <span className="text-xs">Modifier</span>
               )}
             </Button>
           </DialogFooter>

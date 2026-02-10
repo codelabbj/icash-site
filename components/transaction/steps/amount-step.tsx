@@ -1,12 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { Youtube, HelpCircle, ExternalLink } from "lucide-react"
 import type { Platform, UserAppId, Network, UserPhone } from "@/lib/types"
 
 interface AmountStepProps {
@@ -81,66 +80,67 @@ export function AmountStep({
 
   if (!selectedPlatform || !selectedBetId || !selectedNetwork || !selectedPhone) {
     return (
-      <Card>
-        <CardContent className="flex items-center justify-center py-12">
-          <p className="text-muted-foreground">Veuillez compléter les étapes précédentes</p>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-center py-8">
+        <p className="text-sm text-muted-foreground">Veuillez compléter les étapes précédentes</p>
+      </div>
     )
   }
 
+  const isDeposit = type === "deposit"
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Transaction Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Résumé de la transaction</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Type</span>
-            <Badge variant={type === "deposit" ? "default" : "secondary"}>
-              {type === "deposit" ? "Dépôt" : "Retrait"}
-            </Badge>
-          </div>
-          
-          <Separator />
-          
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Plateforme</span>
-            <span className="font-medium">{selectedPlatform.name}</span>
-          </div>
-
-          {selectedPlatform.city && (
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground mb-2.5 px-1">Résumé de la transaction</h3>
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-card/70 via-card/60 to-card/50 backdrop-blur-md border border-border/40 shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5"></div>
+          <div className="relative z-10 p-3 space-y-2.5">
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Ville</span>
-              <span className="font-medium">{selectedPlatform.city}</span>
+              <span className="text-xs text-muted-foreground">Type</span>
+              <Badge variant={isDeposit ? "default" : "secondary"} className="text-[10px] px-2 py-0.5 h-5">
+                {isDeposit ? "Dépôt" : "Retrait"}
+              </Badge>
             </div>
-          )}
-
-          {selectedPlatform.street && (
+            
+            <div className="h-px bg-border/40"></div>
+            
             <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">Rue</span>
-              <span className="font-medium">{selectedPlatform.street}</span>
+              <span className="text-xs text-muted-foreground">Plateforme</span>
+              <span className="text-xs font-semibold">{selectedPlatform.name}</span>
             </div>
-          )}
-          
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">ID de pari</span>
-            <span className="font-medium">{selectedBetId.user_app_id}</span>
+
+            {selectedPlatform.city && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">Ville</span>
+                <span className="text-xs font-semibold">{selectedPlatform.city}</span>
+              </div>
+            )}
+
+            {selectedPlatform.street && (
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-muted-foreground">Rue</span>
+                <span className="text-xs font-semibold">{selectedPlatform.street}</span>
+              </div>
+            )}
+            
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted-foreground">ID de pari</span>
+              <span className="text-xs font-semibold font-mono">{selectedBetId.user_app_id}</span>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted-foreground">Réseau</span>
+              <span className="text-xs font-semibold">{selectedNetwork.public_name}</span>
+            </div>
+            
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-muted-foreground">Téléphone</span>
+              <span className="text-xs font-semibold">+{selectedPhone.phone.slice(0,3)} {selectedPhone.phone.slice(3)}</span>
+            </div>
           </div>
-          
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Réseau</span>
-            <span className="font-medium">{selectedNetwork.public_name}</span>
-          </div>
-          
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-muted-foreground">Numéro de téléphone</span>
-            <span className="font-medium">{selectedPhone.phone}</span>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
         {/* Network Message */}
         {selectedNetwork && (() => {
@@ -151,75 +151,130 @@ export function AmountStep({
             if (!message || message.trim() === "") return null
 
             return (
-                <Card className="overflow-hidden border-primary/20 bg-primary/5">
-                    <CardContent className="p-4 sm:p-6">
-                        <p className="text-sm sm:text-base text-foreground whitespace-pre-wrap break-words">
+                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
+                    <div className="p-3">
+                        <p className="text-xs text-foreground whitespace-pre-wrap break-words leading-relaxed">
                             {message}
                         </p>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             )
         })()}
 
       {/* Amount Input */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg sm:text-xl">Montant de la transaction</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3 sm:space-y-4">
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground mb-2.5 px-1">Montant de la transaction</h3>
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-card/70 via-card/60 to-card/50 backdrop-blur-md border border-border/40 shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5"></div>
+          <div className="relative z-10 p-3">
             <div>
-              <Label htmlFor="amount" className="text-sm sm:text-base">Montant (FCFA)</Label>
+              <Label htmlFor="amount" className="text-xs">Montant (FCFA)</Label>
               <Input
                 id="amount"
                 type="number"
                 value={amount || ""}
                 onChange={(e) => handleAmountChange(e.target.value)}
                 placeholder="Entrez le montant"
-                className={`h-11 sm:h-12 text-sm sm:text-base ${errors.amount ? "border-red-500" : ""}`}
+                className={`h-8 text-xs mt-1.5 ${errors.amount ? "border-red-500" : ""}`}
               />
               {errors.amount && (
-                <p className="text-xs sm:text-sm text-red-500 mt-1">{errors.amount}</p>
+                <p className="text-[10px] text-red-500 mt-1">{errors.amount}</p>
               )}
+              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Min: {isDeposit ? selectedPlatform.minimun_deposit.toLocaleString() : selectedPlatform.minimun_with.toLocaleString()} FCFA</span>
+                <span>•</span>
+                <span>Max: {isDeposit ? selectedPlatform.max_deposit.toLocaleString() : selectedPlatform.max_win.toLocaleString()} FCFA</span>
+              </div>
             </div>
-
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Withdrawal Code (only for withdrawals) */}
       {type === "withdrawal" && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Code de retrait</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div>
-              <Label htmlFor="withdriwalCode" className="text-sm sm:text-base">Code de retrait</Label>
-              <Input
-                id="withdriwalCode"
-                type="text"
-                value={withdriwalCode}
-                onChange={(e) => handleWithdriwalCodeChange(e.target.value)}
-                placeholder="Entrez votre code de retrait"
-                className={`h-11 sm:h-12 text-sm sm:text-base ${errors.withdriwalCode ? "border-red-500" : ""}`}
-              />
-              {errors.withdriwalCode && (
-                <p className="text-xs sm:text-sm text-red-500 mt-1">{errors.withdriwalCode}</p>
-              )}
+        <div>
+          <h3 className="text-sm font-semibold text-muted-foreground mb-2.5 px-1">Code de retrait</h3>
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-card/70 via-card/60 to-card/50 backdrop-blur-md border border-border/40 shadow-lg">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5"></div>
+            <div className="relative z-10 p-3">
+              <div>
+                <Label htmlFor="withdriwalCode" className="text-xs">Code de retrait</Label>
+                <Input
+                  id="withdriwalCode"
+                  type="text"
+                  value={withdriwalCode}
+                  onChange={(e) => handleWithdriwalCodeChange(e.target.value)}
+                  placeholder="Entrez votre code de retrait"
+                  className={`h-8 text-xs mt-1.5 ${errors.withdriwalCode ? "border-red-500" : ""}`}
+                />
+                {errors.withdriwalCode && (
+                  <p className="text-[10px] text-red-500 mt-1">{errors.withdriwalCode}</p>
+                )}
+              </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
+      {/* Tutorial Links */}
+      {(type === "withdrawal" && (selectedPlatform.why_withdrawal_fail || selectedPlatform.withdrawal_tuto_link)) ||
+        (type === "deposit" && selectedPlatform.deposit_tuto_link) ? (
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent backdrop-blur-md border border-primary/20 shadow-lg">
+          <div className="relative z-10 p-3 space-y-2.5">
+            <h4 className="text-xs font-semibold flex items-center gap-1.5 text-foreground">
+              <HelpCircle className="h-3.5 w-3.5 text-primary shrink-0" />
+              Besoin d'aide ?
+            </h4>
+            <div className={`grid gap-2 ${type === "withdrawal" && selectedPlatform.why_withdrawal_fail && selectedPlatform.withdrawal_tuto_link
+                ? "grid-cols-1 sm:grid-cols-2"
+                : "grid-cols-1"
+              }`}>
+              {type === "withdrawal" && selectedPlatform.why_withdrawal_fail && (
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 rounded-lg border border-red-200/60 bg-red-500/5 hover:bg-red-500/10 text-xs font-medium text-red-600 dark:text-red-400 h-8 px-2.5 transition-colors"
+                  onClick={() => window.open(selectedPlatform.why_withdrawal_fail!, "_blank", "noopener,noreferrer")}
+                >
+                  <Youtube className="h-3 w-3 text-red-500 shrink-0" />
+                  <span className="truncate sm:whitespace-normal text-left flex-1 min-w-0">Pourquoi le retrait échoue ?</span>
+                  <ExternalLink className="h-3 w-3 opacity-50 shrink-0" />
+                </button>
+              )}
+              {type === "withdrawal" && selectedPlatform.withdrawal_tuto_link && (
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 text-xs font-medium text-foreground h-8 px-2.5 transition-colors"
+                  onClick={() => window.open(selectedPlatform.withdrawal_tuto_link!, "_blank", "noopener,noreferrer")}
+                >
+                  <Youtube className="h-3 w-3 text-red-500 shrink-0" />
+                  <span className="truncate sm:whitespace-normal text-left flex-1 min-w-0">Tutoriel de retrait</span>
+                  <ExternalLink className="h-3 w-3 opacity-50 shrink-0" />
+                </button>
+              )}
+              {type === "deposit" && selectedPlatform.deposit_tuto_link && (
+                <button
+                  type="button"
+                  className="w-full flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10 text-xs font-medium text-foreground h-8 px-2.5 transition-colors"
+                  onClick={() => window.open(selectedPlatform.deposit_tuto_link!, "_blank", "noopener,noreferrer")}
+                >
+                  <Youtube className="h-3 w-3 text-red-500 shrink-0" />
+                  <span className="truncate sm:whitespace-normal text-left flex-1 min-w-0">Tutoriel de dépôt</span>
+                  <ExternalLink className="h-3 w-3 opacity-50 shrink-0" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Continue Button */}
-      <div className="flex justify-end">
+      <div className="flex justify-end pt-1">
         <Button
           onClick={onNext}
           disabled={!isFormValid()}
-          className="min-w-[120px] h-10 sm:h-11 text-sm sm:text-base"
+          className="min-w-[100px] h-9 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg disabled:opacity-50"
         >
-          Continuer
+          <span className="text-xs font-semibold">Continuer</span>
         </Button>
       </div>
     </div>

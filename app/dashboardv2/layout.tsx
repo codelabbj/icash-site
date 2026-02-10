@@ -21,7 +21,7 @@ import { MobileAppDownload } from "@/components/mobile-app-download"
 import { FloatingSocialButton } from "@/components/floating-social-button"
 import Image from "next/image";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardV2Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { user, isLoading, logout } = useAuth()
   const { theme, setTheme, resolvedTheme } = useTheme()
@@ -60,9 +60,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex flex-col min-h-screen bg-background relative overflow-hidden">
       {/* Animated background gradient orbs */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 -left-4 w-96 h-96 bg-[#4f270f]/15 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 -right-4 w-96 h-96 bg-[#28150c]/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#5f402f]/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
+        <div className="absolute top-0 -left-4 w-96 h-96 bg-[#FF6B35]/15 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 -right-4 w-96 h-96 bg-[#2563EB]/15 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#FF8C42]/10 rounded-full blur-3xl animate-pulse delay-2000"></div>
       </div>
 
       {/* Header */}
@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex items-center gap-2 sm:gap-4">
               <Link href="/dashboard" className="group">
                   <div className="flex items-center group-hover:scale-105 transition-transform">
-                      <Image src="/Zefast-logo.png" width={100} height={100} alt="logo" className="rounded-lg h-16 sm:h-20 w-auto"/>
+                      <Image src="/icash-logo.png" width={100} height={100} alt="logo" className="rounded-lg h-16 sm:h-20 w-auto"/>
                       <h1 className="hidden sm:block text-xl sm:text-2xl font-bold gradient-text ml-2 sm:ml-3">iCASH</h1>
                   </div>
               </Link>
@@ -92,7 +92,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </Link>
               </Button>
               <Button
-                className="h-10 px-2 sm:h-12 sm:px-4 rounded-xl bg-gradient-to-r from-yellow-500 to-primary/40 text-white shadow-lg hover:shadow-xl hover:shadow-yellow-500/40 transition-all duration-300 hover:scale-105 border-2 border-yellow-500/20 font-semibold flex items-center gap-1 sm:gap-2"
+                className="h-10 px-2 sm:h-12 sm:px-4 rounded-xl bg-gradient-to-r from-[#FF6B35] to-[#2563EB] text-white shadow-lg hover:shadow-xl hover:shadow-[#FF6B35]/40 transition-all duration-300 hover:scale-105 border-2 border-[#FF6B35]/20 font-semibold flex items-center gap-1 sm:gap-2"
                 asChild
               >
                 <Link href="/dashboard/coupon" className="flex items-center gap-1 sm:gap-2">
@@ -190,3 +190,4 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   )
 }
+
