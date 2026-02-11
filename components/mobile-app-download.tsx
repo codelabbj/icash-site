@@ -25,7 +25,7 @@ export function MobileAppDownload({
       className={`gap-2 h-10 sm:h-11 ${className}`}
     >
       <Link
-        href="https://zefast-mobile-app.vercel.app/releases/app-v1.0.2.apk"
+        href="https://icash-mobile-app.vercel.app/releases/app-v1.0.2.apk"
         target="_blank"
         rel="noopener noreferrer"
         className="flex items-center gap-2 w-full justify-center"
