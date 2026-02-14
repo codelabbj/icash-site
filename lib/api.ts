@@ -85,7 +85,9 @@ api.interceptors.response.use(
     }
 
     const lang = detectLang(backendMsg)
-    toast.error(backendMsg, { style: { direction: "ltr" } })
+    if (!original.skipErrorToast) {
+      toast.error(backendMsg, { style: { direction: "ltr" } })
+    }
     return Promise.reject(error)
   },
 )

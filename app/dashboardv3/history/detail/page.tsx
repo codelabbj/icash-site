@@ -49,6 +49,8 @@ export default function TransactionDetailPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [copiedRef, setCopiedRef] = useState(false)
+  const [copiedLink, setCopiedLink] = useState(false)
+  const [copiedUssd, setCopiedUssd] = useState(false)
   const [networks, setNetworks] = useState<Network[]>([])
   const [settings, setSettings] = useState<Settings | null>(null)
 
@@ -72,10 +74,12 @@ export default function TransactionDetailPage() {
         setNetworks(networksList)
         setSettings(settingsData)
       } catch {
-        const cached = typeof window !== "undefined" ? sessionStorage.getItem(`${TX_STORAGE_KEY_PREFIX}_${id}`) : null
-        if (cached) {
-          try {
-            setTransaction(JSON.parse(cached))
+        // Fallback : récupérer l'historique puis trouver la transaction par id (comme l'app)
+        try {
+          const history = await transactionApi.getHistory({ page: 1, page_size: 100 })
+          const tx = history.results.find((t) => t.id === id)
+          if (tx) {
+            setTransaction(tx)
             try {
               const [networksList, settingsData] = await Promise.all([
                 networkApi.getAll(),
@@ -86,11 +90,49 @@ export default function TransactionDetailPage() {
             } catch {
               // ignore
             }
-          } catch {
+          } else {
+            const cached = typeof window !== "undefined" ? sessionStorage.getItem(`${TX_STORAGE_KEY_PREFIX}_${id}`) : null
+            if (cached) {
+              try {
+                setTransaction(JSON.parse(cached))
+                try {
+                  const [networksList, settingsData] = await Promise.all([
+                    networkApi.getAll(),
+                    settingsApi.get(),
+                  ])
+                  setNetworks(networksList)
+                  setSettings(settingsData)
+                } catch {
+                  // ignore
+                }
+              } catch {
+                setError("Transaction introuvable")
+              }
+            } else {
+              setError("Transaction introuvable")
+            }
+          }
+        } catch {
+          const cached = typeof window !== "undefined" ? sessionStorage.getItem(`${TX_STORAGE_KEY_PREFIX}_${id}`) : null
+          if (cached) {
+            try {
+              setTransaction(JSON.parse(cached))
+              try {
+                const [networksList, settingsData] = await Promise.all([
+                  networkApi.getAll(),
+                  settingsApi.get(),
+                ])
+                setNetworks(networksList)
+                setSettings(settingsData)
+              } catch {
+                // ignore
+              }
+            } catch {
+              setError("Transaction introuvable")
+            }
+          } else {
             setError("Transaction introuvable")
           }
-        } else {
-          setError("Transaction introuvable")
         }
       } finally {
         setIsLoading(false)
@@ -292,17 +334,74 @@ export default function TransactionDetailPage() {
                   {transaction.net_payable_amout != null && (
                     <DetailRow label="Montant net" value={`${transaction.net_payable_amout.toLocaleString("fr-FR")} FCFA`} />
                   )}
-                  {transaction.transaction_link && (
-                    <div className="flex justify-between items-center py-2.5 border-b border-border/40">
-                      <span className="text-xs text-muted-foreground">Lien de paiement</span>
-                      <a
-                        href={transaction.transaction_link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs font-medium text-primary flex items-center gap-1 hover:underline"
-                      >
-                        Ouvrir <ExternalLink className="h-3 w-3" />
-                      </a>
+                  {(transaction.transaction_link || transaction.ussd_code) && (
+                    <div className="pt-3 pb-2 border-b border-border/40 space-y-3">
+                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                        {transaction.transaction_link && transaction.ussd_code
+                          ? "Lien de paiement & Code USSD"
+                          : transaction.transaction_link
+                          ? "Lien de paiement"
+                          : "Code USSD"}
+                      </p>
+                      {transaction.transaction_link && (
+                        <div className="rounded-xl bg-muted/30 border border-border/50 p-3 space-y-2">
+                          <div className="flex items-start gap-2">
+                            <p className="font-mono text-xs text-foreground break-all flex-1 select-all">
+                              {transaction.transaction_link}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(transaction.transaction_link!)
+                                setCopiedLink(true)
+                                toast.success("Copié !")
+                                setTimeout(() => setCopiedLink(false), 2000)
+                              }}
+                              className="shrink-0 p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary"
+                              title="Copier le lien"
+                            >
+                              {copiedLink ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            </button>
+                          </div>
+                          <Button
+                            size="sm"
+                            className="w-full h-9 text-xs"
+                            onClick={() => window.open(transaction.transaction_link!, "_blank", "noopener,noreferrer")}
+                          >
+                            Ouvrir le lien de paiement
+                          </Button>
+                        </div>
+                      )}
+                      {transaction.ussd_code && (
+                        <div className="rounded-xl bg-muted/30 border border-border/50 p-3 space-y-2">
+                          <div className="flex items-start gap-2">
+                            <code className="font-mono text-xs text-foreground break-all flex-1 select-all">
+                              {transaction.ussd_code}
+                            </code>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(transaction.ussd_code!)
+                                setCopiedUssd(true)
+                                toast.success("Copié !")
+                                setTimeout(() => setCopiedUssd(false), 2000)
+                              }}
+                              className="shrink-0 p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary"
+                              title="Copier le code"
+                            >
+                              {copiedUssd ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            </button>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="w-full h-9 text-xs"
+                            onClick={() => { window.location.href = `tel:${transaction.ussd_code}` }}
+                          >
+                            Composer le code USSD
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                   {transaction.error_message && (

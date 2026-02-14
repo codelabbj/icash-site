@@ -111,6 +111,7 @@ export interface Transaction {
   withdriwal_code: string | null
   error_message: string | null
   transaction_link: string | null
+  ussd_code?: string | null
   net_payable_amout: number | null
   otp_code: string | null
   public_id: string | null

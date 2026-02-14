@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/lib/auth-context"
 import { Button } from "@/components/ui/button"
-import {ArrowLeft, Check, CircleCheck, Copy, Bell, Moon, Sun} from "lucide-react"
+import { ArrowLeft, Bell, Moon, Sun } from "lucide-react"
 import { TransactionProgressBar } from "@/components/transaction/progress-bar"
 import { StepNavigation } from "@/components/transaction/step-navigation"
 import { ConfirmationDialog } from "@/components/transaction/confirmation-dialog"
@@ -17,15 +17,6 @@ import { transactionApi } from "@/lib/api-client"
 import type { Platform, UserAppId, Network, UserPhone } from "@/lib/types"
 import { toast } from "react-hot-toast"
 import { normalizePhoneNumber } from "@/lib/utils"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
-import {useSettings} from "@/lib/hooks/use-settings"
 import { useTheme } from "next-themes"
 import Image from "next/image"
 import Link from "next/link"
@@ -34,7 +25,6 @@ import icashLogo from "@/public/icash-logo.png"
 export default function DepositPage() {
   const router = useRouter()
   const { user } = useAuth()
-  const { settings } = useSettings()
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const [particles, setParticles] = useState<Array<{
@@ -57,19 +47,9 @@ export default function DepositPage() {
   const [selectedPhone, setSelectedPhone] = useState<UserPhone | null>(null)
   const [amount, setAmount] = useState(0)
 
-  const [isMoovUSSDDialogOpen, setIsMoovUSSDDialogOpen] = useState(false)
-  const [moovUSSDCode, setMoovUSSDCode] = useState<string>("")
-  const [isOrangeUSSDDialogOpen, setIsOrangeUSSDDialogOpen] = useState(false)
-  const [orangeUSSDCode, setOrangeUSSDCode] = useState<string>("")
-  const [copiedUSSD, setCopiedUSSD] = useState(false)
   // Confirmation dialog
   const [isConfirmationOpen, setIsConfirmationOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  // Transaction link modal
-  const [transactionLink, setTransactionLink] = useState<string | null>(null)
-  const [isTransactionLinkModalOpen, setIsTransactionLinkModalOpen] = useState(false)
-  const [lastCreatedTransactionId, setLastCreatedTransactionId] = useState<number | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -123,74 +103,25 @@ export default function DepositPage() {
         source: "web"
       })
       
-      setLastCreatedTransactionId(response.id)
       toast.success("Dépôt initié avec succès!")
-      
-      // Check if transaction_link exists in the response
-      if (response.transaction_link) {
-        setTransactionLink(response.transaction_link)
-        setIsTransactionLinkModalOpen(true)
-        setIsConfirmationOpen(false)
-      } else {
-          // Check if Moov network and API is connected
-          const isMoov = selectedNetwork?.name?.toLowerCase() === "moov"
-          const isMoovConnected = selectedNetwork?.deposit_api === "connect" && isMoov
+      setIsConfirmationOpen(false)
 
-          // Check if Orange network and API is connected
-          const isOrange = selectedNetwork?.name?.toLowerCase() === "orange"
-          const isOrangeConnected = selectedNetwork?.deposit_api === "connect" && isOrange
+      const detailUrl = `/dashboardv3/history/detail?id=${response.id}`
 
-          if (isMoovConnected && settings) {
-              // Determine phone number based on country code
-              const isBfCountry = selectedNetwork?.country_code?.toLowerCase() === "bf"
-              const marchandPhone = isBfCountry && settings.bf_moov_marchand_phone
-                  ? settings.bf_moov_marchand_phone
-                  : settings.moov_marchand_phone
-
-              // Generate USSD code: *155*2*1*marchand_phone*net_amount# (with 1% fee removed)
-              const fee = Math.ceil(amount * 0.01) // 1% fee
-              const netAmount = amount - fee
-              const ussdCode = `*155*2*1*${marchandPhone}*${netAmount}#`
-
-              // Always show the USSD dialog
-              setIsMoovUSSDDialogOpen(true)
-              setMoovUSSDCode(ussdCode)
-              setIsConfirmationOpen(false)
-
-              setTimeout(() => {
-                  window.location.href = `tel:${ussdCode}`
-              }, 500)
-
-          } else if (isOrangeConnected && settings) {
-              // For Orange, check payment_by_link - if false, use USSD
-              if (selectedNetwork?.payment_by_link === false) {
-                  // Determine phone number based on country code
-                  const isBfCountry = selectedNetwork?.country_code?.toLowerCase() === "bf"
-                  const marchandPhone = isBfCountry && settings.bf_orange_marchand_phone
-                      ? settings.bf_orange_marchand_phone
-                      : settings.orange_marchand_phone
-
-                  // Generate USSD code: *144*2*1*settings.orange_marchand_phone*montant#
-                  const ussdCode = `*144*2*1*${marchandPhone}*${amount}#`
-
-                  // Show the Orange USSD dialog
-                  setIsOrangeUSSDDialogOpen(true)
-                  setOrangeUSSDCode(ussdCode)
-                  setIsConfirmationOpen(false)
-
-                  setTimeout(() => {
-                      window.location.href = `tel:${ussdCode}`
-                  }, 500)
-              } else {
-                  // If payment_by_link is true, show success (transaction link should have been handled above)
-                  toast.success("Dépôt initié avec succès!")
-                  router.push(`/dashboardv3/history/detail?id=${response.id}`)
-              }
-          } else {
-              toast.success("Dépôt initié avec succès!")
-              router.push(`/dashboardv3/history/detail?id=${response.id}`)
-          }
+      // Ouvrir lien ou USSD puis toujours rediriger vers le détail
+      const ussdCode = (response as { ussd_code?: string | null }).ussd_code?.trim()
+      if (ussdCode) {
+        setTimeout(() => { window.location.href = `tel:${ussdCode}` }, 300)
+        setTimeout(() => router.push(detailUrl), 800)
+        return
       }
+      if (response.transaction_link) {
+        window.open(response.transaction_link, "_blank", "noopener,noreferrer")
+        router.push(detailUrl)
+        return
+      }
+
+      router.push(detailUrl)
     } catch (error: any) {
       // Error message is already handled by API interceptor
       // Only show additional toast if it's not the rate limiting error
@@ -199,18 +130,6 @@ export default function DepositPage() {
       }
     } finally {
       setIsSubmitting(false)
-    }
-  }
-
-  const handleContinueTransaction = () => {
-    if (transactionLink) {
-      window.open(transactionLink, "_blank", "noopener,noreferrer")
-      setIsTransactionLinkModalOpen(false)
-      if (lastCreatedTransactionId != null) {
-        router.push(`/dashboardv3/history/detail?id=${lastCreatedTransactionId}`)
-      } else {
-        router.push("/dashboardv3")
-      }
     }
   }
 
@@ -471,170 +390,6 @@ export default function DepositPage() {
             isLoading={isSubmitting}
           />
 
-          {/* Transaction Link Modal */}
-          <Dialog open={isTransactionLinkModalOpen} onOpenChange={setIsTransactionLinkModalOpen}>
-            <DialogContent className="sm:max-w-md mx-4 border border-border/40 bg-gradient-to-br from-card/95 via-card/90 to-card/85 backdrop-blur-xl shadow-2xl rounded-2xl">
-              <DialogHeader className="pb-3">
-                <DialogTitle className="text-base font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">Continuer la transaction</DialogTitle>
-                <DialogDescription className="text-xs text-muted-foreground">
-                  Cliquez sur continuer pour continuer la transaction
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter className="pt-3">
-                <Button onClick={handleContinueTransaction} className="w-full h-9 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg">
-                  Continuer
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-
-          {/* Moov USSD Code Dialog */}
-          <Dialog open={isMoovUSSDDialogOpen} onOpenChange={setIsMoovUSSDDialogOpen}>
-              <DialogContent className="sm:max-w-md mx-4 border border-border/40 bg-gradient-to-br from-card/95 via-card/90 to-card/85 backdrop-blur-xl shadow-2xl rounded-2xl">
-                  <DialogHeader className="pb-3">
-                      <DialogTitle className="flex items-center gap-2 text-base font-bold">
-                          <div className="p-1.5 rounded-lg bg-primary/20 border border-primary/30">
-                              <CircleCheck className="h-4 w-4 text-primary" />
-                          </div>
-                          <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Code USSD Moov</span>
-                      </DialogTitle>
-                      <DialogDescription className="text-xs text-muted-foreground pt-1">
-                          Vous êtes sur un ordinateur? Veuillez copier ce code et le saisir sur votre téléphone mobile.
-                      </DialogDescription>
-                  </DialogHeader>
-
-                  <div className="space-y-2.5">
-                      <div className="relative">
-                          <div className="bg-gradient-to-br from-muted/60 to-muted/40 p-3 rounded-xl border border-primary/30 shadow-inner">
-                              <code className="text-xs font-mono text-center break-all text-foreground leading-relaxed">
-                                  {moovUSSDCode}
-                              </code>
-                          </div>
-                          <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                  navigator.clipboard.writeText(moovUSSDCode)
-                                  setCopiedUSSD(true)
-                                  setTimeout(() => setCopiedUSSD(false), 2000)
-                                  toast.success("Code copié!")
-                              }}
-                              className="absolute right-2 top-2 h-8 w-8 p-0 rounded-lg bg-card/80 backdrop-blur-sm border border-border/40 hover:bg-card"
-                          >
-                              {copiedUSSD ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
-                          </Button>
-                      </div>
-                      <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-2.5">
-                          <div className="space-y-1.5">
-                              <p className="text-xs text-foreground font-semibold">
-                                  Instructions:
-                              </p>
-                              <ol className="text-xs text-muted-foreground list-decimal list-inside space-y-0.5 ml-3">
-                                  <li>Copiez et composez le code USSD ci-dessus</li>
-                                  <li>Confirmez la transaction</li>
-                              </ol>
-                          </div>
-                      </div>
-                  </div>
-
-                  <DialogFooter className="flex-col sm:flex-row gap-2 pt-3">
-                      <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                              setIsMoovUSSDDialogOpen(false)
-                              router.push(lastCreatedTransactionId != null ? `/dashboardv3/history/detail?id=${lastCreatedTransactionId}` : "/dashboardv3")
-                          }}
-                          className="w-full sm:w-auto h-9 border-border/40"
-                      >
-                          Fermer
-                      </Button>
-                      <Button
-                          type="button"
-                          onClick={() => {
-                              setIsMoovUSSDDialogOpen(false)
-                              toast.success("Dépôt initié avec succès!")
-                              router.push(lastCreatedTransactionId != null ? `/dashboardv3/history/detail?id=${lastCreatedTransactionId}` : "/dashboardv3")
-                          }}
-                          className="w-full sm:w-auto h-9 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg"
-                      >
-                          Confirmer
-                      </Button>
-                  </DialogFooter>
-              </DialogContent>
-          </Dialog>
-
-          {/* Orange USSD Code Dialog */}
-          <Dialog open={isOrangeUSSDDialogOpen} onOpenChange={setIsOrangeUSSDDialogOpen}>
-              <DialogContent className="sm:max-w-md mx-4 border border-border/40 bg-gradient-to-br from-card/95 via-card/90 to-card/85 backdrop-blur-xl shadow-2xl rounded-2xl">
-                  <DialogHeader className="pb-3">
-                      <DialogTitle className="flex items-center gap-2 text-base font-bold">
-                          <div className="p-1.5 rounded-lg bg-primary/20 border border-primary/30">
-                              <CircleCheck className="h-4 w-4 text-primary" />
-                          </div>
-                          <span className="bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">Code USSD Orange</span>
-                      </DialogTitle>
-                      <DialogDescription className="text-xs text-muted-foreground pt-1">
-                          Vous êtes sur un ordinateur? Veuillez copier ce code et le saisir sur votre téléphone mobile.
-                      </DialogDescription>
-                  </DialogHeader>
-
-                  <div className="space-y-2.5">
-                      <div className="relative">
-                          <div className="bg-gradient-to-br from-muted/60 to-muted/40 p-3 rounded-xl border border-primary/30 shadow-inner">
-                              <code className="text-xs font-mono text-center break-all text-foreground leading-relaxed">
-                                  {orangeUSSDCode}
-                              </code>
-                          </div>
-                          <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                  navigator.clipboard.writeText(orangeUSSDCode)
-                                  setCopiedUSSD(true)
-                                  setTimeout(() => setCopiedUSSD(false), 2000)
-                                  toast.success("Code copié!")
-                              }}
-                              className="absolute right-2 top-2 h-8 w-8 p-0 rounded-lg bg-card/80 backdrop-blur-sm border border-border/40 hover:bg-card"
-                          >
-                              {copiedUSSD ? <Check className="h-3.5 w-3.5 text-primary" /> : <Copy className="h-3.5 w-3.5" />}
-                          </Button>
-                      </div>
-                      <div className="bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20 rounded-xl p-2.5">
-                          <p className="text-xs text-foreground">
-                              <span className="font-semibold">Instructions:</span> Copiez le code ci-dessus, puis tapez-le sur votre téléphone mobile pour effectuer la transaction.
-                          </p>
-                      </div>
-                  </div>
-
-                  <DialogFooter className="flex-col sm:flex-row gap-2 pt-3">
-                      <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => {
-                              setIsOrangeUSSDDialogOpen(false)
-                              router.push(lastCreatedTransactionId != null ? `/dashboardv3/history/detail?id=${lastCreatedTransactionId}` : "/dashboardv3")
-                          }}
-                          className="w-full sm:w-auto h-9 border-border/40"
-                      >
-                          Fermer
-                      </Button>
-                      <Button
-                          type="button"
-                          onClick={() => {
-                              setIsOrangeUSSDDialogOpen(false)
-                              toast.success("Dépôt initié avec succès!")
-                              router.push(lastCreatedTransactionId != null ? `/dashboardv3/history/detail?id=${lastCreatedTransactionId}` : "/dashboardv3")
-                          }}
-                          className="w-full sm:w-auto h-9 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg"
-                      >
-                          Confirmer
-                      </Button>
-                  </DialogFooter>
-              </DialogContent>
-          </Dialog>
         </div>
       </div>
     </div>
