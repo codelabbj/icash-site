@@ -90,6 +90,35 @@ export function AmountStep({
 
   return (
     <div className="space-y-3">
+      {/* Amount Input - en haut */}
+      <div>
+        <h3 className="text-sm font-semibold text-muted-foreground mb-2.5 px-1">Montant de la transaction</h3>
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-card/70 via-card/60 to-card/50 backdrop-blur-md border border-border/40 shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5"></div>
+          <div className="relative z-10 p-3">
+            <div>
+              <Label htmlFor="amount" className="text-xs">Montant (FCFA)</Label>
+              <Input
+                id="amount"
+                type="number"
+                value={amount || ""}
+                onChange={(e) => handleAmountChange(e.target.value)}
+                placeholder="Entrez le montant"
+                className={`h-8 text-xs mt-1.5 ${errors.amount ? "border-red-500" : ""}`}
+              />
+              {errors.amount && (
+                <p className="text-[10px] text-red-500 mt-1">{errors.amount}</p>
+              )}
+              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Min: {isDeposit ? selectedPlatform.minimun_deposit.toLocaleString() : selectedPlatform.minimun_with.toLocaleString()} FCFA</span>
+                <span>•</span>
+                <span>Max: {isDeposit ? selectedPlatform.max_deposit.toLocaleString() : selectedPlatform.max_win.toLocaleString()} FCFA</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Transaction Summary */}
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground mb-2.5 px-1">Résumé de la transaction</h3>
@@ -142,24 +171,24 @@ export function AmountStep({
         </div>
       </div>
 
-        {/* Network Message */}
-        {selectedNetwork && (() => {
-            const message = type === "deposit"
-                ? selectedNetwork.deposit_message
-                : selectedNetwork.withdrawal_message
+      {/* Network Message */}
+      {selectedNetwork && (() => {
+        const message = type === "deposit"
+          ? selectedNetwork.deposit_message
+          : selectedNetwork.withdrawal_message
 
-            if (!message || message.trim() === "") return null
+        if (!message || message.trim() === "") return null
 
-            return (
-                <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
-                    <div className="p-3">
-                        <p className="text-xs text-foreground whitespace-pre-wrap break-words leading-relaxed">
-                            {message}
-                        </p>
-                    </div>
-                </div>
-            )
-        })()}
+        return (
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/10 via-primary/5 to-transparent border border-primary/20">
+            <div className="p-3">
+              <p className="text-xs text-foreground whitespace-pre-wrap break-words leading-relaxed">
+                {message}
+              </p>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Important: numéro de paiement (dépôt uniquement) */}
       {isDeposit && selectedPhone && (
@@ -172,35 +201,6 @@ export function AmountStep({
           </p>
         </div>
       )}
-
-      {/* Amount Input */}
-      <div>
-        <h3 className="text-sm font-semibold text-muted-foreground mb-2.5 px-1">Montant de la transaction</h3>
-        <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-card/70 via-card/60 to-card/50 backdrop-blur-md border border-border/40 shadow-lg">
-          <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-secondary/5"></div>
-          <div className="relative z-10 p-3">
-            <div>
-              <Label htmlFor="amount" className="text-xs">Montant (FCFA)</Label>
-              <Input
-                id="amount"
-                type="number"
-                value={amount || ""}
-                onChange={(e) => handleAmountChange(e.target.value)}
-                placeholder="Entrez le montant"
-                className={`h-8 text-xs mt-1.5 ${errors.amount ? "border-red-500" : ""}`}
-              />
-              {errors.amount && (
-                <p className="text-[10px] text-red-500 mt-1">{errors.amount}</p>
-              )}
-              <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Min: {isDeposit ? selectedPlatform.minimun_deposit.toLocaleString() : selectedPlatform.minimun_with.toLocaleString()} FCFA</span>
-                <span>•</span>
-                <span>Max: {isDeposit ? selectedPlatform.max_deposit.toLocaleString() : selectedPlatform.max_win.toLocaleString()} FCFA</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Withdrawal Code (only for withdrawals) */}
       {type === "withdrawal" && (
