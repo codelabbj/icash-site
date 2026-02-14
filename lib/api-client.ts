@@ -191,6 +191,11 @@ export const transactionApi = {
     return data
   },
 
+  getById: async (id: number) => {
+    const { data } = await api.get<Transaction>(`/mobcash/transaction/${id}/`)
+    return data
+  },
+
   createDeposit: async (depositData: {
     amount: number
     phone_number: string

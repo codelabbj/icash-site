@@ -341,7 +341,18 @@ export default function TransactionHistoryPage() {
                   ) : (
                     <div className="space-y-2">
                       {transactions.map((transaction) => (
-                        <TransactionCard key={transaction.id} transaction={transaction}/>
+                        <Link
+                          key={transaction.id}
+                          href={`/dashboardv3/history/detail?id=${transaction.id}`}
+                          onClick={() => {
+                            try {
+                              sessionStorage.setItem(`tx_detail_${transaction.id}`, JSON.stringify(transaction))
+                            } catch {}
+                          }}
+                          className="block"
+                        >
+                          <TransactionCard transaction={transaction} />
+                        </Link>
                       ))}
                     </div>
                   )}

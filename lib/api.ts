@@ -1,6 +1,11 @@
 import axios from "axios"
 import { toast } from "react-hot-toast"
 
+// Simuler un token invalide pour tester le refresh : la 1ère requête envoie "fake-<token>" → 401 → refresh → retry avec le vrai token
+const FAKE_ACCESS_TOKEN_FOR_REFRESH_TEST = false
+
+let useFakeAccessToken = FAKE_ACCESS_TOKEN_FOR_REFRESH_TEST
+
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BASE_URL,
   headers: {
@@ -17,8 +22,14 @@ function detectLang(text: string) {
 }
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("access_token")
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  let token = typeof window !== "undefined" ? localStorage.getItem("access_token") : null
+  if (token) {
+    if (useFakeAccessToken) {
+      token = "fake-" + token
+      useFakeAccessToken = false
+    }
+    config.headers.Authorization = `Bearer ${token}`
+  }
   
   // Ensure fresh data with cache busting
   config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'

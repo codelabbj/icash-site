@@ -95,7 +95,7 @@ export default function WithdrawalPage() {
 
     setIsSubmitting(true)
     try {
-      await transactionApi.createWithdrawal({
+      const response = await transactionApi.createWithdrawal({
         amount,
         phone_number: normalizePhoneNumber(selectedPhone.phone),
         app: selectedPlatform.id,
@@ -106,7 +106,7 @@ export default function WithdrawalPage() {
       })
       
       toast.success("Retrait initié avec succès!")
-      router.push("/dashboardv3")
+      router.push(`/dashboardv3/history/detail?id=${response.id}`)
     } catch (error: any) {
       // Error message is already handled by API interceptor
       // Only show additional toast if it's not the rate limiting error

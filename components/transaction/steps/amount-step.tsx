@@ -161,6 +161,18 @@ export function AmountStep({
             )
         })()}
 
+      {/* Important: numéro de paiement (dépôt uniquement) */}
+      {isDeposit && selectedPhone && (
+        <div className="rounded-2xl bg-primary/10 border border-primary/20 p-4 flex items-start gap-3">
+          <svg className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <p className="text-sm text-foreground leading-relaxed">
+            <strong>Important :</strong> Le numéro <strong>{selectedPhone.phone}</strong> est celui que vous avez choisi. C’est avec ce même numéro que vous devez effectuer le paiement (USSD ou lien de paiement).
+          </p>
+        </div>
+      )}
+
       {/* Amount Input */}
       <div>
         <h3 className="text-sm font-semibold text-muted-foreground mb-2.5 px-1">Montant de la transaction</h3>

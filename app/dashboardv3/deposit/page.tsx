@@ -69,6 +69,7 @@ export default function DepositPage() {
   // Transaction link modal
   const [transactionLink, setTransactionLink] = useState<string | null>(null)
   const [isTransactionLinkModalOpen, setIsTransactionLinkModalOpen] = useState(false)
+  const [lastCreatedTransactionId, setLastCreatedTransactionId] = useState<number | null>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -122,6 +123,7 @@ export default function DepositPage() {
         source: "web"
       })
       
+      setLastCreatedTransactionId(response.id)
       toast.success("Dépôt initié avec succès!")
       
       // Check if transaction_link exists in the response
@@ -182,11 +184,11 @@ export default function DepositPage() {
               } else {
                   // If payment_by_link is true, show success (transaction link should have been handled above)
                   toast.success("Dépôt initié avec succès!")
-                  router.push("/dashboardv3")
+                  router.push(`/dashboardv3/history/detail?id=${response.id}`)
               }
           } else {
               toast.success("Dépôt initié avec succès!")
-              router.push("/dashboardv3")
+              router.push(`/dashboardv3/history/detail?id=${response.id}`)
           }
       }
     } catch (error: any) {
@@ -204,7 +206,11 @@ export default function DepositPage() {
     if (transactionLink) {
       window.open(transactionLink, "_blank", "noopener,noreferrer")
       setIsTransactionLinkModalOpen(false)
-      router.push("/dashboardv3")
+      if (lastCreatedTransactionId != null) {
+        router.push(`/dashboardv3/history/detail?id=${lastCreatedTransactionId}`)
+      } else {
+        router.push("/dashboardv3")
+      }
     }
   }
 
@@ -538,7 +544,7 @@ export default function DepositPage() {
                           variant="outline"
                           onClick={() => {
                               setIsMoovUSSDDialogOpen(false)
-                              router.push("/dashboardv3")
+                              router.push(lastCreatedTransactionId != null ? `/dashboardv3/history/detail?id=${lastCreatedTransactionId}` : "/dashboardv3")
                           }}
                           className="w-full sm:w-auto h-9 border-border/40"
                       >
@@ -549,7 +555,7 @@ export default function DepositPage() {
                           onClick={() => {
                               setIsMoovUSSDDialogOpen(false)
                               toast.success("Dépôt initié avec succès!")
-                              router.push("/dashboardv3")
+                              router.push(lastCreatedTransactionId != null ? `/dashboardv3/history/detail?id=${lastCreatedTransactionId}` : "/dashboardv3")
                           }}
                           className="w-full sm:w-auto h-9 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg"
                       >
@@ -609,7 +615,7 @@ export default function DepositPage() {
                           variant="outline"
                           onClick={() => {
                               setIsOrangeUSSDDialogOpen(false)
-                              router.push("/dashboardv3")
+                              router.push(lastCreatedTransactionId != null ? `/dashboardv3/history/detail?id=${lastCreatedTransactionId}` : "/dashboardv3")
                           }}
                           className="w-full sm:w-auto h-9 border-border/40"
                       >
@@ -620,7 +626,7 @@ export default function DepositPage() {
                           onClick={() => {
                               setIsOrangeUSSDDialogOpen(false)
                               toast.success("Dépôt initié avec succès!")
-                              router.push("/dashboardv3")
+                              router.push(lastCreatedTransactionId != null ? `/dashboardv3/history/detail?id=${lastCreatedTransactionId}` : "/dashboardv3")
                           }}
                           className="w-full sm:w-auto h-9 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg"
                       >
