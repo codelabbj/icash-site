@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Moon, Sun, Github, Loader2, Bell, ArrowDownToLine, ArrowUpFromLine, Phone, Ticket, Wallet, RefreshCw, ArrowRight, Copy } from "lucide-react"
+import { Moon, Sun, Github, Loader2, Bell, User, ArrowDownToLine, ArrowUpFromLine, Phone, Ticket, Wallet, RefreshCw, ArrowRight, Copy } from "lucide-react"
 import { useTheme } from "next-themes"
 import Image from "next/image"
 import Link from "next/link"
@@ -167,6 +167,16 @@ export default function DashboardV3Page() {
               <span className="text-foreground font-semibold text-lg">iCASH</span>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                className="h-10 w-10 rounded-full bg-card/60 backdrop-blur-md hover:bg-card/80 text-foreground border border-border/50"
+                title="Profil"
+                asChild
+              >
+                <Link href="/dashboardv3/profile">
+                  <User className="h-5 w-5" />
+                </Link>
+              </Button>
               <Button
                 variant="ghost"
                 className="h-10 w-10 rounded-full bg-card/60 backdrop-blur-md hover:bg-card/80 text-foreground border border-border/50"
