@@ -138,6 +138,7 @@ export const userAppIdApi = {
     const { data } = await api.post<UserAppId>("/mobcash/user-app-id/", {
       user_app_id,
       app,
+      app_name: app,
     })
     return data
   },
@@ -146,6 +147,7 @@ export const userAppIdApi = {
     const { data } = await api.patch<UserAppId>(`/mobcash/user-app-id/${id}/`, {
       user_app_id,
       app,
+      app_name: app,
     })
     return data
   },
